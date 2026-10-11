@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.RosterController"
+      spacing="0"
+      styleClass="root">
+
+    <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+        <TextField fx:id="keywordField" promptText="学号 / 姓名" prefWidth="160"/>
+        <ComboBox fx:id="buildingCombo" promptText="楼栋" prefWidth="120"/>
+        <ComboBox fx:id="classCombo" promptText="班级" prefWidth="130"/>
+        <Button text="查询" onAction="#onSearch" styleClass="btn-primary" defaultButton="true"/>
+        <Button text="导入 Excel" onAction="#onImport" styleClass="btn-ghost"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="刷新" onAction="#onRefresh" styleClass="btn-ghost"/>
+    </HBox>
+
+    <TableView fx:id="studentTable" VBox.vgrow="ALWAYS">
+        <columns>
+            <TableColumn fx:id="colStudentNo" text="学号" prefWidth="110" minWidth="80"/>
+            <TableColumn fx:id="colName" text="姓名" prefWidth="90" minWidth="60"/>
+            <TableColumn fx:id="colGender" text="性别" prefWidth="60" minWidth="45"/>
+            <TableColumn fx:id="colClassName" text="班级" prefWidth="160" minWidth="100"/>
+            <TableColumn fx:id="colBuilding" text="楼栋" prefWidth="80" minWidth="60"/>
+            <TableColumn fx:id="colRoom" text="房间" prefWidth="70" minWidth="55"/>
+            <TableColumn fx:id="colBed" text="床位" prefWidth="60" minWidth="45"/>
+            <TableColumn fx:id="colPhone" text="手机" prefWidth="120" minWidth="90"/>
+            <TableColumn fx:id="colStatus" text="状态" prefWidth="80" minWidth="60"/>
+        </columns>
+    </TableView>
+
+    <HBox alignment="CENTER_RIGHT" styleClass="pagination-bar">
+        <Label fx:id="totalLabel" text="共 0 条记录"/>
+        <Label fx:id="pageInfoLabel"/>
+        <Button text="上一页" fx:id="prevBtn" onAction="#onPrevPage" styleClass="btn-ghost"/>
+        <Button text="下一页" fx:id="nextBtn" onAction="#onNextPage" styleClass="btn-ghost"/>
+    </HBox>
+</VBox>

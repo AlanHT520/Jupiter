@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="net.alan.jupiter.fx.controller.DashboardController"
+            styleClass="root">
+
+    <VBox spacing="20">
+        <padding><Insets top="24" right="24" bottom="24" left="24"/></padding>
+
+        <VBox spacing="4">
+            <Label text="首页概览" styleClass="page-title"/>
+            <Label text="欢迎使用寝室管理系统，以下是当前数据概况"
+                   style="-fx-text-fill: #808080; -fx-font-size: 13px;"/>
+        </VBox>
+
+        <HBox spacing="16">
+            <VBox styleClass="stat-card" spacing="10" prefWidth="190">
+                <Label text="&#x1F3E2;" style="-fx-font-size: 22px;"/>
+                <Label text="宿舍楼栋" styleClass="stat-label"/>
+                <Label fx:id="buildingCountLabel" text="--" styleClass="stat-value"/>
+            </VBox>
+            <VBox styleClass="stat-card" spacing="10" prefWidth="190">
+                <Label text="&#x1F3E0;" style="-fx-font-size: 22px;"/>
+                <Label text="房间总数" styleClass="stat-label"/>
+                <Label fx:id="roomCountLabel" text="--" styleClass="stat-value"/>
+            </VBox>
+            <VBox styleClass="stat-card" spacing="10" prefWidth="190">
+                <Label text="&#x1F393;" style="-fx-font-size: 22px;"/>
+                <Label text="学生人数" styleClass="stat-label"/>
+                <Label fx:id="studentCountLabel" text="--" styleClass="stat-value"/>
+            </VBox>
+            <VBox styleClass="stat-card" spacing="10" prefWidth="190">
+                <Label text="&#x23F3;" style="-fx-font-size: 22px;"/>
+                <Label text="进行中任务" styleClass="stat-label"/>
+                <Label fx:id="activeTaskLabel" text="--" styleClass="stat-value"/>
+            </VBox>
+        </HBox>
+
+        <Separator/>
+
+        <VBox spacing="12">
+            <Label text="近期任务" styleClass="page-subtitle"/>
+            <VBox fx:id="recentTaskBox" spacing="6"/>
+        </VBox>
+    </VBox>
+</ScrollPane>

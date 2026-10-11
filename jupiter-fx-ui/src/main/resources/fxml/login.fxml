@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.LoginController"
+      alignment="CENTER" spacing="20"
+      styleClass="login-root"
+      prefWidth="420" prefHeight="560">
+
+    <padding><Insets top="40" right="50" bottom="40" left="50"/></padding>
+
+    <VBox alignment="CENTER" spacing="0">
+        <Label text="Jupiter" styleClass="login-logo"/>
+        <Label text="Java Edition" styleClass="login-edition"/>
+    </VBox>
+    <Label text="寝室管理系统" styleClass="login-subtitle"/>
+
+    <VBox spacing="8" alignment="CENTER">
+        <TextField fx:id="usernameField" promptText="用户名" prefWidth="280"/>
+        <PasswordField fx:id="passwordField" promptText="密码" prefWidth="280"/>
+    </VBox>
+
+    <CheckBox fx:id="autoLoginCheckbox" text="自动登录" styleClass="auto-login-check"/>
+
+    <Button text="登  录" onAction="#onLogin" prefWidth="280"
+            styleClass="login-button" defaultButton="true"/>
+
+    <Label fx:id="messageLabel" styleClass="login-message"/>
+</VBox>
