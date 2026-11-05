@@ -1,0 +1,66 @@
+[versions]
+java = "21"
+spring-boot = "3.4.4"
+spring-dependency-management = "1.1.7"
+lombok = "1.18.36"
+mapstruct = "1.6.3"
+mapstruct-processor = "1.6.3"
+jjwt = "0.12.6"
+poi = "5.4.0"
+freemarker = "2.3.34"
+jackson = "2.18.3"
+postgresql = "42.7.5"
+mysql = "9.2.0"
+h2 = "2.3.232"
+easyexcel = "4.0.3"
+springdoc = "2.8.6"
+javafx = "21.0.5"
+atlantafx = "2.0.0"
+ikonli = "12.3.1"
+controlsfx = "11.2.1"
+junit-jupiter = "5.14.0"
+junit-platform-launcher = "1.14.0"
+
+[libraries]
+spring-boot-starter-web = { group = "org.springframework.boot", name = "spring-boot-starter-web" }
+spring-boot-starter-security = { group = "org.springframework.boot", name = "spring-boot-starter-security" }
+spring-boot-starter-data-jpa = { group = "org.springframework.boot", name = "spring-boot-starter-data-jpa" }
+spring-boot-starter-validation = { group = "org.springframework.boot", name = "spring-boot-starter-validation" }
+spring-boot-starter-test = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+spring-boot-starter-actuator = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+spring-boot-devtools = { group = "org.springframework.boot", name = "spring-boot-devtools" }
+spring-security-test = { group = "org.springframework.security", name = "spring-security-test" }
+
+lombok = { group = "org.projectlombok", name = "lombok", version.ref = "lombok" }
+mapstruct = { group = "org.mapstruct", name = "mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { group = "org.mapstruct", name = "mapstruct-processor", version.ref = "mapstruct-processor" }
+
+jjwt-api = { group = "io.jsonwebtoken", name = "jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { group = "io.jsonwebtoken", name = "jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { group = "io.jsonwebtoken", name = "jjwt-jackson", version.ref = "jjwt" }
+
+poi-ooxml = { group = "org.apache.poi", name = "poi-ooxml", version.ref = "poi" }
+freemarker = { group = "org.freemarker", name = "freemarker", version.ref = "freemarker" }
+
+jackson-databind = { group = "com.fasterxml.jackson.core", name = "jackson-databind", version.ref = "jackson" }
+jackson-dataformat-yaml = { group = "com.fasterxml.jackson.dataformat", name = "jackson-dataformat-yaml", version.ref = "jackson" }
+
+postgresql = { group = "org.postgresql", name = "postgresql", version.ref = "postgresql" }
+mysql-connector = { group = "com.mysql", name = "mysql-connector-j", version.ref = "mysql" }
+h2 = { group = "com.h2database", name = "h2", version.ref = "h2" }
+
+easyexcel = { group = "com.alibaba", name = "easyexcel", version.ref = "easyexcel" }
+springdoc-openapi = { group = "org.springdoc", name = "springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+atlantafx-base = { group = "io.github.mkpaz", name = "atlantafx-base", version.ref = "atlantafx" }
+ikonli-javafx = { group = "org.kordamp.ikonli", name = "ikonli-javafx", version.ref = "ikonli" }
+ikonli-fontawesome5 = { group = "org.kordamp.ikonli", name = "ikonli-fontawesome5-pack", version.ref = "ikonli" }
+controlsfx = { group = "org.controlsfx", name = "controlsfx", version.ref = "controlsfx" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit-jupiter" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit-platform-launcher" }
+
+[plugins]
+javaConventions = { id = "chinan.java-conventions" }
+springConventions = { id = "chinan.spring-conventions" }
+springBoot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+springDependencyManagement = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }

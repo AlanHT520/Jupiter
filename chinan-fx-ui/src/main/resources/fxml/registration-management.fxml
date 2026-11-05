@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.RegistrationManagementController"
+      spacing="16"
+      styleClass="root">
+
+    <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
+
+    <VBox styleClass="card" spacing="10">
+        <Label text="注册开关" styleClass="section-title"/>
+        <HBox alignment="CENTER_LEFT" spacing="14">
+            <Label text="允许新用户自助注册" styleClass="muted"/>
+            <ToggleButton fx:id="registrationToggle" text="已关闭" onAction="#onToggleRegistration"
+                          styleClass="btn-ghost" minWidth="96"/>
+            <Label fx:id="toggleStatusLabel" text="注册当前已关闭" styleClass="muted"/>
+        </HBox>
+    </VBox>
+
+    <VBox styleClass="card" spacing="10" VBox.vgrow="ALWAYS">
+        <HBox alignment="CENTER_LEFT" spacing="8">
+            <Label text="待审核申请" styleClass="section-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="pendingCountLabel" text="共 0 条待审核" styleClass="muted"/>
+            <Button text="刷新" onAction="#onRefreshPending" styleClass="btn-ghost"/>
+        </HBox>
+        <TableView fx:id="pendingTable" VBox.vgrow="ALWAYS" minHeight="180">
+            <placeholder>
+                <Label text="暂无待审核的注册申请"/>
+            </placeholder>
+            <columns>
+                <TableColumn fx:id="colName" text="姓名" prefWidth="90"/>
+                <TableColumn fx:id="colStudentNo" text="学号" prefWidth="130"/>
+                <TableColumn fx:id="colClassName" text="班级" prefWidth="110"/>
+                <TableColumn fx:id="colPhone" text="手机号" prefWidth="130"/>
+                <TableColumn fx:id="colSubmittedAt" text="提交时间" prefWidth="170"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+    <VBox styleClass="card" spacing="10">
+        <Label text="已审核历史" styleClass="section-title"/>
+        <TableView fx:id="historyTable" minHeight="180">
+            <placeholder>
+                <Label text="暂无审核历史"/>
+            </placeholder>
+            <columns>
+                <TableColumn fx:id="colHName" text="姓名" prefWidth="90"/>
+                <TableColumn fx:id="colHStudentNo" text="学号" prefWidth="130"/>
+                <TableColumn fx:id="colHClassName" text="班级" prefWidth="110"/>
+                <TableColumn fx:id="colHPhone" text="手机号" prefWidth="130"/>
+                <TableColumn fx:id="colHStatus" text="审核结果" prefWidth="100"/>
+                <TableColumn fx:id="colHSubmittedAt" text="提交时间" prefWidth="170"/>
+            </columns>
+        </TableView>
+    </VBox>
+</VBox>

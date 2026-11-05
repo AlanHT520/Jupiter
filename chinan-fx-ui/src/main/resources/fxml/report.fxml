@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="net.alan.jupiter.fx.controller.ReportController"
+            styleClass="root">
+
+    <VBox spacing="22">
+        <padding><Insets top="26" right="28" bottom="28" left="28"/></padding>
+
+        <HBox spacing="16">
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="🏢" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="楼栋总数" styleClass="stat-label"/>
+                        <Label fx:id="totalBuildingLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="🏠" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="房间总数" styleClass="stat-label"/>
+                        <Label fx:id="totalRoomLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="🎓" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="学生总数" styleClass="stat-label"/>
+                        <Label fx:id="totalStudentLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="📋" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="查寝记录" styleClass="stat-label"/>
+                        <Label fx:id="checkRecordCountLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+        </HBox>
+
+        <VBox spacing="12">
+            <HBox alignment="CENTER_LEFT">
+                <Label text="各楼栋规模" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="房间数 / 学生数" styleClass="caption"/>
+            </HBox>
+            <VBox fx:id="buildingStatBox" spacing="8"/>
+        </VBox>
+    </VBox>
+</ScrollPane>

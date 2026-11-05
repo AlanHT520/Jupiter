@@ -10,14 +10,14 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
 }
 
-rootProject.name = "Jupiter Java Edition"
+rootProject.name = "Chinan Java Edition"
 
 include(
-    "jupiter-common",
-    "jupiter-domain",
-    "jupiter-application",
-    "jupiter-infrastructure",
-    "jupiter-web",
-    "jupiter-fx-ui",
-    "jupiter-boot"
+    "chinan-common",
+    "chinan-domain",
+    "chinan-application",
+    "chinan-infrastructure",
+    "chinan-web",
+    "chinan-fx-ui",
+    "chinan-boot"
 )

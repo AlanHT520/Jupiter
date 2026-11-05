@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>查寝助手</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="loginView">
+        <div class="login-container">
+            <div class="logo">🏢</div>
+            <div class="app">查寝助手</div>
+            <div class="form-item">
+                <input type="text" id="username" placeholder="请输入用户名" autocomplete="username">
+            </div>
+            <div class="form-item">
+                <input type="password" id="password" placeholder="请输入密码" autocomplete="current-password">
+            </div>
+            <div class="form-item">
+                <button class="btn btn-primary" onclick="doLogin()">登录</button>
+            </div>
+            <div id="loginToast" class="toast"></div>
+        </div>
+    </div>
+
+    <div id="mainView" style="display:none">
+        <div class="header">
+            <span class="title" style="padding-left:4px">查寝任务</span>
+        </div>
+        <div style="padding:12px 16px; display:none; background:var(--surface); border-bottom:1px solid var(--border);" id="userInfo">
+            <span id="greetingText" style="font-size:14px; color:var(--text-secondary);"></span>
+        </div>
+        <div class="content" id="taskList">
+            <div class="spinner"></div>
+        </div>
+
+        <div class="tab-bar">
+            <div class="tab-item active" id="tabPending" onclick="switchTab('pending')">
+                <span class="icon">📋</span>
+                <span class="label">待开始</span>
+            </div>
+            <div class="tab-item" id="tabInProgress" onclick="switchTab('inProgress')">
+                <span class="icon">🔄</span>
+                <span class="label">进行中</span>
+            </div>
+            <div class="tab-item" onclick="doLogout()">
+                <span class="icon">🚪</span>
+                <span class="label">退出</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/common.js"></script>
+    <script>
+        var currentTab = 'pending';
+
+        function checkAuth() {
+            if (getToken()) {
+                document.getElementById('loginView').style.display = 'none';
+                document.getElementById('mainView').style.display = '';
+                loadTasks();
+            } else {
+                document.getElementById('loginView').style.display = '';
+                document.getElementById('mainView').style.display = 'none';
+            }
+        }
+
+        function showToast(msg) {
+            var t = document.getElementById('loginToast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(function() { t.classList.remove('show'); }, 2000);
+        }
+
+        function doLogin() {
+            var username = document.getElementById('username').value.trim();
+            var password = document.getElementById('password').value.trim();
+            if (!username || !password) { showToast('请输入用户名和密码'); return; }
+
+            apiPost('/api/auth/login', { username: username, password: password })
+                .then(function(res) {
+                    var data = res.data;
+                    setToken(data.token || data.accessToken, true);
+                    document.getElementById('loginView').style.display = 'none';
+                    document.getElementById('mainView').style.display = '';
+                    loadTasks();
+                })
+                .catch(function(e) {
+                    showToast(e.message || '登录失败，请检查用户名密码');
+                });
+        }
+
+        function doLogout() {
+            clearToken();
+            document.getElementById('loginView').style.display = '';
+            document.getElementById('mainView').style.display = 'none';
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tabPending').classList.toggle('active', tab === 'pending');
+            document.getElementById('tabInProgress').classList.toggle('active', tab === 'inProgress');
+            loadTasks();
+        }
+
+        function loadTasks() {
+            var container = document.getElementById('taskList');
+            container.innerHTML = '<div class="spinner"></div>';
+            apiGet('/api/tasks/my?sort=createdAt,desc&size=50')
+                .then(function(res) {
+                    var allTasks = res.data && res.data.records ? res.data.records : (Array.isArray(res.data) ? res.data : []);
+                    var tasks = allTasks.filter(function(t) {
+                        return currentTab === 'pending'
+                            ? (t.status === 'PENDING')
+                            : (t.status === 'IN_PROGRESS');
+                    });
+                    if (!tasks || tasks.length === 0) {
+                        container.innerHTML = '<div class="empty"><div class="icon">📋</div><p>暂无任务</p></div>';
+                        return;
+                    }
+                    var html = '';
+                    tasks.forEach(function(t) {
+                        var total = t.totalRooms || 0;
+                        var checked = t.checkedRooms || 0;
+                        var pct = total > 0 ? Math.round(checked / total * 100) : 0;
+                        var statusLabel = '';
+                        var badgeCls = '';
+                        switch (t.status) {
+                            case 'PENDING': statusLabel = '待开始'; badgeCls = 'badge badge-orange'; break;
+                            case 'IN_PROGRESS': statusLabel = '进行中'; badgeCls = 'badge badge-blue'; break;
+                            case 'COMPLETED': statusLabel = '已完成'; badgeCls = 'badge badge-green'; break;
+                            case 'CANCELLED': statusLabel = '已取消'; badgeCls = 'badge badge-gray'; break;
+                            default: statusLabel = t.status || ''; badgeCls = 'badge badge-gray';
+                        }
+                        html += '<div class="card" onclick="goTask(\'' + esc(t.id) + '\')" style="padding:14px 16px;">';
+                        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;">';
+                        html += '<span style="font-size:16px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px;">' + esc(t.title || '查寝任务') + '</span>';
+                        html += '<span class="' + badgeCls + '">' + statusLabel + '</span>';
+                        html += '</div>';
+                        html += '<div style="display:flex;gap:10px;margin-top:6px;font-size:12px;color:var(--text-secondary);">';
+                        html += '<span>🏢 ' + esc(t.buildingName || '') + '</span>';
+                        html += '<span>📍 ' + esc(t.floorNumber || '') + '</span>';
+                        html += '<span>📅 ' + esc(t.taskDate || '') + '</span>';
+                        html += '</div>';
+                        html += '<div style="margin-top:10px;font-size:12px;color:var(--text-secondary);">查房进度 ' + checked + '/' + total + '</div>';
+                        html += '<div class="progress"><div class="fill" style="width:' + pct + '%"></div></div>';
+                        html += '</div>';
+                    });
+                    container.innerHTML = html;
+                })
+                .catch(function(e) {
+                    container.innerHTML = '<div class="empty"><div class="icon">⚠️</div><p>加载失败: ' + e.message + '</p></div>';
+                });
+        }
+
+        function goTask(taskId) {
+            window.location.href = '/pe/task.html?taskId=' + taskId;
+        }
+
+        document.getElementById('password').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doLogin();
+        });
+
+        checkAuth();
+    </script>
+</body>
+</html>

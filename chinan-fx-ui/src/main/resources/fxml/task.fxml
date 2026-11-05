@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.TaskController"
+      spacing="0"
+      styleClass="root">
+
+    <HBox alignment="CENTER_LEFT" spacing="8" styleClass="toolbar">
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="刷新" onAction="#onRefresh" styleClass="btn-ghost"/>
+        <Button text="一键清除已完成" onAction="#onClearCompleted" styleClass="btn-danger"/>
+        <Button text="＋ 创建任务" onAction="#onCreateTask" styleClass="btn-primary"/>
+    </HBox>
+
+    <VBox VBox.vgrow="ALWAYS">
+        <padding><Insets top="18" right="22" bottom="10" left="22"/></padding>
+        <TableView fx:id="taskTable" VBox.vgrow="ALWAYS">
+            <placeholder>
+                <Label text="暂无查寝任务，点击右上角「创建任务」开始"/>
+            </placeholder>
+            <columns>
+                <TableColumn fx:id="colTaskNo" text="任务编号" prefWidth="118" minWidth="80"/>
+                <TableColumn fx:id="colTitle" text="任务标题" prefWidth="200" minWidth="120"/>
+                <TableColumn fx:id="colBuilding" text="楼栋" prefWidth="78" minWidth="60"/>
+                <TableColumn fx:id="colFloor" text="楼层" prefWidth="58" minWidth="46"/>
+                <TableColumn fx:id="colRooms" text="房间" prefWidth="92" minWidth="64"/>
+                <TableColumn fx:id="colChecker" text="查宿者" prefWidth="86" minWidth="64"/>
+                <TableColumn fx:id="colStatus" text="状态" prefWidth="78" minWidth="60"/>
+                <TableColumn fx:id="colProgress" text="进度" prefWidth="72" minWidth="56"/>
+                <TableColumn fx:id="colActions" text="操作" prefWidth="176" minWidth="150"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+    <HBox alignment="CENTER_RIGHT" styleClass="pagination-bar">
+        <Label fx:id="pageInfoLabel" styleClass="muted"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="上一页" fx:id="prevBtn" onAction="#onPrevPage" styleClass="btn-ghost"/>
+        <Button text="下一页" fx:id="nextBtn" onAction="#onNextPage" styleClass="btn-ghost"/>
+    </HBox>
+</VBox>

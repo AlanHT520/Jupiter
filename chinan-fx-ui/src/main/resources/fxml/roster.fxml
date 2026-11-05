@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.RosterController"
+      spacing="0"
+      styleClass="root">
+
+    <HBox alignment="CENTER_LEFT" spacing="8" styleClass="toolbar">
+        <TextField fx:id="keywordField" promptText="搜索学号 / 姓名" prefWidth="190"/>
+        <ComboBox fx:id="buildingCombo" promptText="全部楼栋" prefWidth="130"/>
+        <ComboBox fx:id="classCombo" promptText="全部班级" prefWidth="150"/>
+        <Button text="查询" onAction="#onSearch" styleClass="btn-primary" defaultButton="true"/>
+        <Button text="导入 Excel" onAction="#onImport" styleClass="btn-ghost"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="刷新" onAction="#onRefresh" styleClass="btn-ghost"/>
+    </HBox>
+
+    <VBox VBox.vgrow="ALWAYS">
+        <padding><Insets top="18" right="22" bottom="10" left="22"/></padding>
+        <TableView fx:id="studentTable" VBox.vgrow="ALWAYS">
+            <placeholder>
+                <Label text="暂无学生数据，可通过「文件 → 导入宿舍数据」批量导入"/>
+            </placeholder>
+            <columns>
+                <TableColumn fx:id="colStudentNo" text="学号" prefWidth="112" minWidth="80"/>
+                <TableColumn fx:id="colName" text="姓名" prefWidth="88" minWidth="60"/>
+                <TableColumn fx:id="colGender" text="性别" prefWidth="58" minWidth="45"/>
+                <TableColumn fx:id="colClassName" text="班级" prefWidth="168" minWidth="100"/>
+                <TableColumn fx:id="colBuilding" text="楼栋" prefWidth="78" minWidth="60"/>
+                <TableColumn fx:id="colRoom" text="房间" prefWidth="70" minWidth="55"/>
+                <TableColumn fx:id="colBed" text="床位" prefWidth="58" minWidth="45"/>
+                <TableColumn fx:id="colPhone" text="手机" prefWidth="118" minWidth="90"/>
+                <TableColumn fx:id="colStatus" text="状态" prefWidth="86" minWidth="62"/>
+            </columns>
+        </TableView>
+    </VBox>
+
+    <HBox alignment="CENTER_RIGHT" styleClass="pagination-bar">
+        <Label fx:id="totalLabel" text="共 0 条记录" styleClass="muted"/>
+        <Label fx:id="pageInfoLabel" styleClass="muted"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="上一页" fx:id="prevBtn" onAction="#onPrevPage" styleClass="btn-ghost"/>
+        <Button text="下一页" fx:id="nextBtn" onAction="#onNextPage" styleClass="btn-ghost"/>
+    </HBox>
+</VBox>

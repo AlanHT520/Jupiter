@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.LogViewerController"
+      spacing="0"
+      styleClass="root">
+
+    <HBox alignment="CENTER_LEFT" spacing="8" styleClass="toolbar">
+        <Label text="实时日志（最近 500 行）" styleClass="muted"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="刷新" onAction="#onRefresh" styleClass="btn-ghost"/>
+    </HBox>
+
+    <VBox VBox.vgrow="ALWAYS">
+        <padding><Insets top="18" right="22" bottom="22" left="22"/></padding>
+        <TextArea fx:id="logArea" VBox.vgrow="ALWAYS"
+                  styleClass="log-viewer"
+                  editable="false" wrapText="false"
+                  promptText="暂无日志记录"/>
+    </VBox>
+</VBox>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="net.alan.jupiter.fx.controller.BuildingController"
+            styleClass="root">
+
+    <VBox spacing="20">
+        <padding><Insets top="26" right="28" bottom="28" left="28"/></padding>
+
+        <HBox alignment="CENTER_LEFT">
+            <Label text="各宿舍楼房间与学生规模" styleClass="section-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="数据来自名册导入" styleClass="caption"/>
+        </HBox>
+
+        <FlowPane fx:id="buildingCards" hgap="16" vgap="16"/>
+    </VBox>
+</ScrollPane>

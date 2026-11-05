@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<ScrollPane fitToWidth="true"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="net.alan.jupiter.fx.controller.DashboardController"
+            styleClass="root">
+
+    <VBox spacing="22">
+        <padding><Insets top="26" right="28" bottom="28" left="28"/></padding>
+
+        <HBox spacing="16">
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="🏢" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="宿舍楼栋" styleClass="stat-label"/>
+                        <Label fx:id="buildingCountLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="🏠" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="房间总数" styleClass="stat-label"/>
+                        <Label fx:id="roomCountLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="🎓" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="学生人数" styleClass="stat-label"/>
+                        <Label fx:id="studentCountLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+            <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <Label text="⏳" styleClass="stat-icon"/>
+                    <VBox spacing="2">
+                        <Label text="进行中任务" styleClass="stat-label"/>
+                        <Label fx:id="activeTaskLabel" text="--" styleClass="stat-value"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+        </HBox>
+
+        <VBox spacing="12">
+            <HBox alignment="CENTER_LEFT">
+                <Label text="近期任务" styleClass="section-title"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="按创建时间倒序" styleClass="caption"/>
+            </HBox>
+            <VBox fx:id="recentTaskBox" spacing="8"/>
+        </VBox>
+    </VBox>
+</ScrollPane>
