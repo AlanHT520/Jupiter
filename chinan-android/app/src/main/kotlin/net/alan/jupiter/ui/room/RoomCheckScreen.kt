@@ -6,47 +6,97 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import net.alan.jupiter.domain.model.CheckStatus
-import net.alan.jupiter.ui.theme.*
+import net.alan.jupiter.ui.components.QnCard
+import net.alan.jupiter.ui.components.QnEmpty
+import net.alan.jupiter.ui.components.QnGhostButton
+import net.alan.jupiter.ui.components.QnMono
+import net.alan.jupiter.ui.components.QnPrimaryButton
+import net.alan.jupiter.ui.components.QnRadius
+import net.alan.jupiter.ui.components.QnScaffold
+import net.alan.jupiter.ui.components.QnStatus
+import net.alan.jupiter.ui.components.QnStatusTag
+import net.alan.jupiter.ui.components.QnTag
+import net.alan.jupiter.ui.theme.QnAccent
+import net.alan.jupiter.ui.theme.QnBg
+import net.alan.jupiter.ui.theme.QnLine
+import net.alan.jupiter.ui.theme.QnPanel
+import net.alan.jupiter.ui.theme.QnPanelAlt
+import net.alan.jupiter.ui.theme.QnText
+import net.alan.jupiter.ui.theme.QnTextDim
+import net.alan.jupiter.ui.theme.QnTextMuted
+import net.alan.jupiter.ui.theme.QnWarn
+import net.alan.jupiter.ui.theme.StatusFemale
+import net.alan.jupiter.ui.theme.StatusIntern
+import net.alan.jupiter.ui.theme.statusColor
 import java.io.File
 import java.util.UUID
 
+/**
+ * 房间查寝（/check/<building>/<room>）：学生卡 = QnCard + QnTag(状态)；
+ * 状态选择沿用原 ModalBottomSheet 逻辑，改为暗色细线风格；
+ * 底部提交栏常驻并显示 ● QUEUED N。
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoomCheckScreen(
@@ -55,6 +105,7 @@ fun RoomCheckScreen(
     roomNumber: String,
     onBackClick: () -> Unit,
     onSubmitSuccess: () -> Unit,
+    buildingName: String = "",
     viewModel: RoomCheckViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -149,50 +200,70 @@ fun RoomCheckScreen(
         )
     }
 
-    // 监听成功：绿圈动画 1.5 秒后返回
+    // 监听成功：展示完成动画，但不自动返回；由用户点「留在此页」或「返回房间列表」
     LaunchedEffect(uiState.submitSuccess) {
         if (uiState.submitSuccess) {
             showSuccessAnimation = true
-            delay(1500)
-            showSuccessAnimation = false
-            onSubmitSuccess()
         }
     }
 
     val dirtyCount = uiState.students.count { it.isDirty }
+    val displayRoom = uiState.roomNumber.ifBlank { roomNumber }
+    val path = buildString {
+        append("/check/")
+        if (buildingName.isNotBlank()) {
+            append(buildingName)
+            append('/')
+        }
+        append(displayRoom)
+    }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            uiState.roomNumber.ifBlank { roomNumber },
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        if (uiState.students.isNotEmpty()) {
-                            Text(
-                                "${uiState.students.size} 名学生",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+    val headerStatus = when {
+        uiState.isSubmitting -> QnStatus.QUEUED
+        uiState.queuedCount > 0 -> QnStatus.QUEUED
+        uiState.error != null -> QnStatus.FAILED
+        uiState.cacheOnly -> QnStatus.CACHED
+        dirtyCount > 0 -> QnStatus.QUEUED
+        uiState.isLoading && uiState.students.isEmpty() -> QnStatus.RUNNING
+        uiState.students.isEmpty() -> QnStatus.IDLE
+        else -> QnStatus.OK
+    }
+    val headerDetail = when {
+        uiState.queuedCount > 0 -> "${uiState.queuedCount}"
+        dirtyCount > 0 -> "$dirtyCount"
+        else -> null
+    }
+
+    QnScaffold(
+        path = path,
+        status = headerStatus,
+        statusDetail = headerDetail,
+        onBack = onBackClick,
+        actions = {
+            IconButton(
+                onClick = { viewModel.loadRoom(taskId, roomId) },
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.Refresh,
+                    contentDescription = "刷新",
+                    tint = QnTextMuted,
+                    modifier = Modifier.size(18.dp)
                 )
-            )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+        bottomBar = {
+            if (uiState.students.isNotEmpty()) {
+                SubmitBar(
+                    students = uiState.students.size,
+                    dirtyCount = dirtyCount,
+                    queuedCount = uiState.queuedCount,
+                    isSubmitting = uiState.isSubmitting,
+                    enabled = uiState.students.isNotEmpty(),
+                    onSubmit = { viewModel.submitChecks(taskId, roomId) }
+                )
+            }
+        }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -203,29 +274,33 @@ fun RoomCheckScreen(
                 LazyListState()
             }
             when {
-                uiState.isLoading -> {
+                uiState.isLoading && uiState.students.isEmpty() -> {
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(40.dp),
-                            strokeWidth = 3.dp
+                            modifier = Modifier.size(34.dp),
+                            strokeWidth = 2.dp,
+                            color = QnAccent
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            "加载学生信息...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            "// 正在加载学生信息",
+                            color = QnTextDim,
+                            fontFamily = QnMono,
+                            fontSize = 11.sp
                         )
                     }
                 }
                 uiState.students.isEmpty() && uiState.error == null -> {
-                    net.alan.jupiter.ui.components.EmptyState(
+                    QnEmpty(
                         icon = Icons.Outlined.PersonOff,
                         title = "暂无学生",
                         hint = "该房间暂未分配学生，请返回房间列表或联系管理员",
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(24.dp)
                     )
                 }
                 else -> {
@@ -233,19 +308,38 @@ fun RoomCheckScreen(
                         state = listState,
                         contentPadding = PaddingValues(
                             start = 12.dp, end = 12.dp,
-                            top = 8.dp, bottom = 88.dp
+                            top = 10.dp, bottom = 14.dp
                         ),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        if (uiState.cacheOnly) {
+                            item(key = "cache_banner") {
+                                QnCard(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        QnTag(text = "CACHED", color = QnTextMuted)
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Text(
+                                            text = "离线缓存：学生名单与上次查寝状态来自本地快照",
+                                            color = QnTextMuted,
+                                            fontSize = 11.sp,
+                                            maxLines = 2
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         if (dirtyCount > 0) {
                             item(key = "summary") {
-                                DirtySummaryCard(dirtyCount = dirtyCount, totalCount = uiState.students.size)
+                                DirtySummaryCard(
+                                    dirtyCount = dirtyCount,
+                                    totalCount = uiState.students.size
+                                )
                             }
                         }
 
                         itemsIndexed(uiState.students, key = { _, sws -> sws.student.id }) { index, sws ->
                             StudentCard(
-                                index = index,
                                 studentWithStatus = sws,
                                 onStatusClick = {
                                     statusPickerIndex = index
@@ -272,80 +366,114 @@ fun RoomCheckScreen(
                             )
                         }
                     }
-
-                    Surface(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                        shape = MaterialTheme.shapes.large,
-                        shadowElevation = 6.dp,
-                        color = MaterialTheme.colorScheme.surface,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Button(
-                            onClick = { viewModel.submitChecks(taskId, roomId) },
-                            enabled = !uiState.isSubmitting,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(52.dp),
-                            shape = MaterialTheme.shapes.large,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (dirtyCount > 0)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.tertiary
-                            ),
-                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                        ) {
-                            if (uiState.isSubmitting) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text("提交中...")
-                            } else {
-                                Icon(
-                                    if (dirtyCount > 0) Icons.Default.CloudUpload else Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    if (dirtyCount > 0) "提交查寝结果 ($dirtyCount)" else "一键确认全部在寝",
-                                    style = MaterialTheme.typography.titleSmall
-                                )
-                            }
-                        }
-                    }
                 }
+            }
+
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(12.dp)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = QnPanel,
+                    contentColor = QnText,
+                    shape = QnRadius,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
             }
         }
     }
 
     AnimatedVisibility(
         visible = showSuccessAnimation,
-        enter = scaleIn(animationSpec = tween(300)) + fadeIn(animationSpec = tween(300)),
-        exit = fadeOut(animationSpec = tween(200))
+        enter = fadeIn(tween(180)) + scaleIn(initialScale = 0.92f, animationSpec = tween(220)),
+        exit = fadeOut(tween(150)) + scaleOut(targetScale = 0.96f, animationSpec = tween(150))
     ) {
+        val pulse = rememberInfiniteTransition(label = "room-check-success")
+        val glowAlpha by pulse.animateFloat(
+            initialValue = 0.45f,
+            targetValue = 0f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1400, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "glow-alpha"
+        )
+        val glowScale by pulse.animateFloat(
+            initialValue = 0.85f,
+            targetValue = 1.35f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1400, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "glow-scale"
+        )
+
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(QnBg.copy(alpha = 0.92f)),
             contentAlignment = Alignment.Center
         ) {
-            Surface(
-                modifier = Modifier.size(96.dp),
-                shape = CircleShape,
-                color = StatusPresent.copy(alpha = 0.9f),
-                shadowElevation = 4.dp
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(28.dp)
             ) {
-                Icon(
-                    Icons.Default.CheckCircle,
-                    contentDescription = "提交成功",
-                    modifier = Modifier
-                        .padding(20.dp)
-                        .fillMaxSize(),
-                    tint = Color.White
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(136.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(136.dp)
+                            .graphicsLayer {
+                                scaleX = glowScale
+                                scaleY = glowScale
+                                alpha = glowAlpha
+                            }
+                            .border(1.dp, QnAccent, CircleShape)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .background(QnPanel, QnRadius)
+                            .border(1.dp, QnAccent, QnRadius),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = "提交成功",
+                            modifier = Modifier.size(46.dp),
+                            tint = QnAccent
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "本间查寝完成",
+                    color = QnText,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "$displayRoom · " + if (uiState.submitQueued) "已保存本地，等待同步" else "已提交服务器",
+                    color = QnAccent,
+                    fontFamily = QnMono,
+                    fontSize = 11.sp
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                QnPrimaryButton(
+                    text = "留在此页继续查看",
+                    onClick = { showSuccessAnimation = false }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                QnGhostButton(
+                    text = "返回房间列表",
+                    onClick = {
+                        showSuccessAnimation = false
+                        onSubmitSuccess()
+                    }
                 )
             }
         }
@@ -365,42 +493,72 @@ fun RoomCheckScreen(
     }
 }
 
+/** 底部提交栏：● QUEUED N（本地待上行）+ 提交按钮（原逻辑不变）。 */
 @Composable
-private fun DirtySummaryCard(dirtyCount: Int, totalCount: Int) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(28.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+private fun SubmitBar(
+    students: Int,
+    dirtyCount: Int,
+    queuedCount: Int,
+    isSubmitting: Boolean,
+    enabled: Boolean,
+    onSubmit: () -> Unit
+) {
+    Surface(color = QnPanelAlt) {
+        Column {
+            HorizontalDivider(color = QnLine, thickness = 1.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Outlined.EditNote,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .padding(5.dp)
-                        .fillMaxSize(),
-                    tint = MaterialTheme.colorScheme.primary
+                Column(modifier = Modifier.weight(1f)) {
+                    QnStatusTag(
+                        status = if (queuedCount > 0 || dirtyCount > 0) {
+                            QnStatus.QUEUED
+                        } else {
+                            QnStatus.IDLE
+                        },
+                        detail = when {
+                            queuedCount > 0 -> "$queuedCount"
+                            dirtyCount > 0 -> "$dirtyCount"
+                            else -> null
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "STUDENTS $students · EDITED $dirtyCount · QUEUED $queuedCount",
+                        color = QnTextDim,
+                        fontFamily = QnMono,
+                        fontSize = 9.sp,
+                        maxLines = 1
+                    )
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                QnPrimaryButton(
+                    text = when {
+                        isSubmitting -> "提交中..."
+                        dirtyCount > 0 -> "提交 ($dirtyCount)"
+                        else -> "确认在寝"
+                    },
+                    onClick = onSubmit,
+                    enabled = enabled && !isSubmitting
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun DirtySummaryCard(dirtyCount: Int, totalCount: Int) {
+    QnCard(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            QnTag(text = "EDITED", color = QnWarn)
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                "已修改 $dirtyCount/$totalCount 名学生",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
+                text = "已修改 $dirtyCount/$totalCount 名学生",
+                color = QnTextMuted,
+                fontSize = 11.sp
             )
         }
     }
@@ -408,7 +566,6 @@ private fun DirtySummaryCard(dirtyCount: Int, totalCount: Int) {
 
 @Composable
 private fun StudentCard(
-    index: Int,
     studentWithStatus: StudentWithStatus,
     onStatusClick: () -> Unit,
     onRemarkChanged: (String) -> Unit,
@@ -419,357 +576,306 @@ private fun StudentCard(
     val s = studentWithStatus.student
     val currentStatus = studentWithStatus.selectedStatus
     val isDirty = studentWithStatus.isDirty
-    val statusCol = currentStatus?.let { statusColor(it.code) } ?: StatusUnchecked
+    val statusCol = currentStatus?.let { statusColor(it.code) } ?: QnTextDim
     val studentInitial = if (s.name.isNotEmpty()) s.name.first().toString() else "?"
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() }
-            ) { onStatusClick() },
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isDirty)
-                statusCol.copy(alpha = 0.04f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        border = BorderStroke(
-            1.dp,
-            if (isDirty) statusCol.copy(alpha = 0.35f)
-            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
-        )
+    QnCard(
+        modifier = Modifier.clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() }
+        ) { onStatusClick() },
+        contentPadding = PaddingValues(12.dp)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(QnPanelAlt, QnRadius)
+                    .border(1.dp, QnLine, QnRadius),
+                contentAlignment = Alignment.Center
             ) {
-                Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = CircleShape,
-                    color = statusCol.copy(alpha = 0.12f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = studentInitial,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = statusCol,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
+                Text(
+                    text = studentInitial,
+                    color = QnText,
+                    fontFamily = QnMono,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-                Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(10.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = s.name,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        if (s.gender.isNotBlank()) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = MaterialTheme.shapes.extraSmall,
-                                color = if (s.gender == "男")
-                                    StatusIntern.copy(alpha = 0.1f)
-                                else
-                                    StatusFemale.copy(alpha = 0.1f)
-                            ) {
-                                Text(
-                                    text = s.gender,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (s.gender == "男") StatusIntern else StatusFemale,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                )
-                            }
-                        }
-                        if (isDirty) {
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Surface(
-                                shape = MaterialTheme.shapes.extraSmall,
-                                color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
-                            ) {
-                                Text(
-                                    text = "已修改",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.tertiary,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
-                                )
-                            }
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Row {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Outlined.Badge,
-                                contentDescription = null,
-                                modifier = Modifier.size(13.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = s.studentNo,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Outlined.Bed,
-                                contentDescription = null,
-                                modifier = Modifier.size(13.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                            Spacer(modifier = Modifier.width(3.dp))
-                            Text(
-                                text = "${s.bedNumber}床",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            )
-                        }
-                        if (s.className != null) {
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = s.className,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-                }
-
-                FilledTonalButton(
-                    onClick = onStatusClick,
-                    modifier = Modifier.heightIn(min = 40.dp),
-                    shape = MaterialTheme.shapes.small,
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = statusCol.copy(alpha = 0.1f),
-                        contentColor = statusCol
-                    ),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(statusCol)
-                    )
-                    Spacer(modifier = Modifier.width(7.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        currentStatus?.label ?: "",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
+                        text = s.name,
+                        color = QnText,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1
                     )
-                }
-            }
-
-            if (s.presetStatus != null && s.presetStatus != CheckStatus.PRESENT) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Surface(
-                    shape = MaterialTheme.shapes.extraSmall,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Outlined.Lock,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                        )
+                    if (s.gender.isNotBlank()) {
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "系统预置: ${s.presetStatus.label}${s.presetStatusFrom?.let { " ($it)" } ?: ""}",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        QnTag(
+                            text = s.gender,
+                            color = if (s.gender == "男") StatusIntern else StatusFemale
                         )
                     }
+                    if (isDirty) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        QnTag(text = "EDITED", color = QnWarn)
+                    }
                 }
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = listOfNotNull(
+                        "${s.bedNumber}床".takeIf { s.bedNumber.isNotBlank() },
+                        s.className?.takeIf { it.isNotBlank() }
+                    ).joinToString(" · "),
+                    color = QnTextDim,
+                    fontFamily = QnMono,
+                    fontSize = 9.5.sp,
+                    maxLines = 1
+                )
             }
 
-            if (isDirty) {
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Surface(
+                shape = QnRadius,
+                color = QnPanelAlt,
+                border = BorderStroke(1.dp, QnLine),
+                modifier = Modifier.clickable(
+                    onClickLabel = "选择在寝状态"
+                ) { onStatusClick() }
+            ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.small)
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    QnTag(
+                        text = currentStatus?.label ?: "未设置",
+                        color = statusCol
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
                     Icon(
-                        Icons.Outlined.Edit,
+                        Icons.Default.UnfoldMore,
                         contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        tint = QnTextDim,
+                        modifier = Modifier.size(14.dp)
                     )
+                }
+            }
+        }
+
+        if (s.presetStatus != null && s.presetStatus != CheckStatus.PRESENT) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, QnLine, QnRadius)
+                    .padding(horizontal = 9.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "PRESET",
+                    color = QnTextDim,
+                    fontFamily = QnMono,
+                    fontSize = 9.sp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                QnTag(
+                    text = s.presetStatus.label,
+                    color = statusColor(s.presetStatus.code)
+                )
+                if (s.presetStatusFrom != null) {
                     Spacer(modifier = Modifier.width(8.dp))
-                    BasicTextField(
-                        value = studentWithStatus.remark,
-                        onValueChange = onRemarkChanged,
-                        modifier = Modifier.weight(1f),
-                        textStyle = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        decorationBox = { innerTextField ->
-                            if (studentWithStatus.remark.isEmpty()) {
-                                Text(
-                                    "点击添加备注...",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                                )
-                            }
-                            innerTextField()
-                        }
+                    Text(
+                        text = s.presetStatusFrom,
+                        color = QnTextDim,
+                        fontFamily = QnMono,
+                        fontSize = 9.sp
                     )
-                    if (studentWithStatus.remark.isNotEmpty()) {
-                        IconButton(
-                            onClick = { onRemarkChanged("") },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Close,
-                                contentDescription = "清除备注",
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                }
+            }
+        }
+
+        if (isDirty) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, QnLine, QnRadius)
+                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Outlined.Edit,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = QnTextDim
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                BasicTextField(
+                    value = studentWithStatus.remark,
+                    onValueChange = onRemarkChanged,
+                    modifier = Modifier.weight(1f),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        color = QnText,
+                        fontFamily = QnMono,
+                        fontSize = 11.sp
+                    ),
+                    cursorBrush = SolidColor(QnAccent),
+                    decorationBox = { innerTextField ->
+                        if (studentWithStatus.remark.isEmpty()) {
+                            Text(
+                                "点击添加备注...",
+                                color = QnTextDim,
+                                fontFamily = QnMono,
+                                fontSize = 10.5.sp
                             )
                         }
+                        innerTextField()
+                    }
+                )
+                if (studentWithStatus.remark.isNotEmpty()) {
+                    IconButton(
+                        onClick = { onRemarkChanged("") },
+                        modifier = Modifier.size(30.dp)
+                    ) {
+                        Icon(
+                            Icons.Outlined.Close,
+                            contentDescription = "清除备注",
+                            modifier = Modifier.size(14.dp),
+                            tint = QnTextMuted
+                        )
                     }
                 }
             }
+        }
 
-            AnimatedVisibility(
-                visible = currentStatus == CheckStatus.PERSONAL_LEAVE
-                        || currentStatus == CheckStatus.SICK_LEAVE,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    val localProof = studentWithStatus.proofLocalPath
-                    val serverProof = studentWithStatus.proofFilePath
-                    if (localProof != null || serverProof != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.small)
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (localProof != null) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(localProof)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = "证明照片",
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                // 服务端相对路径无法直接加载，显示"已上传"占位而不是破图
-                                Box(
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.CameraAlt,
-                                        contentDescription = "证明已上传",
-                                        modifier = Modifier.size(24.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    if (localProof != null) "证明照片" else "证明已上传",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    if (localProof != null) "点击下方按钮重新拍摄" else "服务端已有证明，可重新拍摄替换",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                                )
-                            }
-                            FilledTonalButton(
-                                onClick = onTakePhoto,
-                                modifier = Modifier.size(44.dp),
-                                contentPadding = PaddingValues(0.dp)
+        AnimatedVisibility(
+            visible = currentStatus == CheckStatus.PERSONAL_LEAVE ||
+                    currentStatus == CheckStatus.SICK_LEAVE,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
+        ) {
+            Column {
+                Spacer(modifier = Modifier.height(8.dp))
+                val localProof = studentWithStatus.proofLocalPath
+                val serverProof = studentWithStatus.proofFilePath
+                if (localProof != null || serverProof != null) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, QnLine, QnRadius)
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (localProof != null) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(localProof)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = "证明照片",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(QnRadius),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            // 服务端相对路径无法直接加载，显示"已上传"占位而不是破图
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(QnRadius)
+                                    .background(QnPanelAlt)
+                                    .border(1.dp, QnLine, QnRadius),
+                                contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     Icons.Outlined.CameraAlt,
-                                    contentDescription = "重拍证明照片",
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(6.dp))
-                            FilledTonalButton(
-                                onClick = onPickFromGallery,
-                                modifier = Modifier.size(44.dp),
-                                contentPadding = PaddingValues(0.dp)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.PhotoLibrary,
-                                    contentDescription = "从相册选择证明照片",
-                                    modifier = Modifier.size(18.dp)
+                                    contentDescription = "证明已上传",
+                                    modifier = Modifier.size(20.dp),
+                                    tint = QnTextDim
                                 )
                             }
                         }
-                    } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            FilledTonalButton(
-                                onClick = onTakePhoto,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.CameraAlt,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("拍照")
-                            }
-                            FilledTonalButton(
-                                onClick = onPickFromGallery,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Icon(
-                                    Icons.Outlined.PhotoLibrary,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("本地导入")
-                            }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (localProof != null) "PROOF" else "PROOF (SERVER)",
+                                color = QnTextMuted,
+                                fontFamily = QnMono,
+                                fontSize = 9.5.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (localProof != null) "点击右侧按钮重新拍摄" else "服务端已有证明，可重新拍摄替换",
+                                color = QnTextDim,
+                                fontSize = 10.sp,
+                                maxLines = 2
+                            )
                         }
+                        ProofIconButton(
+                            icon = Icons.Outlined.CameraAlt,
+                            label = "重拍证明照片",
+                            onClick = onTakePhoto
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        ProofIconButton(
+                            icon = Icons.Outlined.PhotoLibrary,
+                            label = "从相册选择证明照片",
+                            onClick = onPickFromGallery
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        QnGhostButton(
+                            text = "拍照",
+                            onClick = onTakePhoto,
+                            modifier = Modifier.weight(1f)
+                        )
+                        QnGhostButton(
+                            text = "本地导入",
+                            onClick = onPickFromGallery,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ProofIconButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = QnRadius,
+        color = QnPanelAlt,
+        border = BorderStroke(1.dp, QnLine)
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(36.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = QnText,
+                modifier = Modifier.size(16.dp)
+            )
         }
     }
 }
@@ -785,103 +891,76 @@ private fun StatusPickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = MaterialTheme.shapes.extraLarge,
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        shape = QnRadius,
+        containerColor = QnPanel,
+        tonalElevation = 0.dp,
         dragHandle = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Box(
                     modifier = Modifier
-                        .width(36.dp)
-                        .height(4.dp)
-                        .clip(MaterialTheme.shapes.extraSmall)
-                        .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                        .width(32.dp)
+                        .height(2.dp)
+                        .background(QnLine)
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    "选择在寝状态",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "SELECT STATUS",
+                    color = QnTextDim,
+                    fontFamily = QnMono,
+                    fontSize = 9.5.sp
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
             }
         }
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(bottom = 32.dp),
+                .padding(horizontal = 14.dp)
+                .padding(bottom = 26.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             CheckStatus.entries.forEach { status ->
                 val col = statusColor(status.code)
                 val isSelected = status == currentStatus
 
-                Card(
+                Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onSelect(status) },
-                    shape = MaterialTheme.shapes.medium,
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected)
-                            col.copy(alpha = 0.08f)
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    border = if (isSelected)
-                        BorderStroke(1.5f.dp, col.copy(alpha = 0.5f))
-                    else
-                        null
+                    shape = QnRadius,
+                    color = if (isSelected) QnPanelAlt else QnPanel,
+                    border = BorderStroke(
+                        1.dp,
+                        if (isSelected) col.copy(alpha = 0.65f) else QnLine
+                    )
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                            .padding(horizontal = 12.dp, vertical = 11.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Surface(
-                            modifier = Modifier.size(36.dp),
-                            shape = CircleShape,
-                            color = col.copy(alpha = 0.12f)
-                        ) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(14.dp)
-                                        .clip(CircleShape)
-                                        .background(col)
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(14.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = status.label,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (isSelected) col else MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = statusDescription(status),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                            )
-                        }
+                        QnTag(text = status.label, color = col)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = statusDescription(status),
+                            color = QnTextDim,
+                            fontFamily = QnMono,
+                            fontSize = 9.5.sp,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
                         if (isSelected) {
                             Icon(
-                                Icons.Default.CheckCircle,
+                                Icons.Default.Check,
                                 contentDescription = null,
                                 tint = col,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
@@ -890,15 +969,11 @@ private fun StatusPickerBottomSheet(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
+            QnGhostButton(
+                text = "取消",
                 onClick = onDismiss,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text("取消")
-            }
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }

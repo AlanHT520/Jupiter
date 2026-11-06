@@ -2,84 +2,106 @@ package net.alan.jupiter.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ========== Light Theme Palette（与桌面端同一套品牌蓝） ==========
-val LightPrimary = Color(0xFF3D7EFF)
-val LightOnPrimary = Color(0xFFFFFFFF)
-val LightPrimaryContainer = Color(0xFFDCE9FF)
-val LightOnPrimaryContainer = Color(0xFF0A2A5E)
-val LightSecondary = Color(0xFF54627A)
-val LightOnSecondary = Color(0xFFFFFFFF)
-val LightSecondaryContainer = Color(0xFFDCE6F8)
-val LightOnSecondaryContainer = Color(0xFF101C2E)
-val LightTertiary = Color(0xFF6B5778)
-val LightOnTertiary = Color(0xFFFFFFFF)
-val LightTertiaryContainer = Color(0xFFF2DAFF)
-val LightOnTertiaryContainer = Color(0xFF251431)
-val LightBackground = Color(0xFFF5F7FB)
-val LightOnBackground = Color(0xFF121826)
-val LightSurface = Color(0xFFFFFFFF)
-val LightOnSurface = Color(0xFF121826)
-val LightSurfaceVariant = Color(0xFFE8EDF5)
-val LightOnSurfaceVariant = Color(0xFF5A6577)
-val LightError = Color(0xFFD93A3A)
-val LightOnError = Color(0xFFFFFFFF)
-val LightErrorContainer = Color(0xFFFFDAD6)
-val LightOnErrorContainer = Color(0xFF410002)
-val LightOutline = Color(0xFF7C889C)
-val LightOutlineVariant = Color(0xFFDCE3EE)
-val LightInverseSurface = Color(0xFF1F2937)
-val LightInverseOnSurface = Color(0xFFF1F4FA)
-val LightInversePrimary = Color(0xFF9EC2FF)
+// ============================================================
+// 寝安 QIN'AN — Geek palette（暗色唯一主题）
+// 底 #0B0E11 / 面板 #11161B / 细线 #222B32 / 文字 #E6EDF0
+// 唯一强调色 #3DDC97 / 危险 #FF5C5C / 警告 #FFC857
+// ============================================================
+
+val QnBg = Color(0xFF0B0E11)
+val QnPanel = Color(0xFF11161B)
+val QnPanelAlt = Color(0xFF0E1418)
+val QnLine = Color(0xFF222B32)
+val QnLineStrong = Color(0xFF2E3A44)
+val QnText = Color(0xFFE6EDF0)
+val QnTextMuted = Color(0xFF8A97A0)
+val QnTextDim = Color(0xFF5A666E)
+val QnAccent = Color(0xFF3DDC97)
+val QnAccentDeep = Color(0xFF2FB981)
+val QnOnAccent = Color(0xFF06110C)
+val QnAccentWash = Color(0xFF12241C)
+val QnDanger = Color(0xFFFF5C5C)
+val QnDangerWash = Color(0xFF2A1414)
+val QnWarn = Color(0xFFFFC857)
+
+// 兼容旧引用：模块里仍按 Light* 命名引用的地方统一映射到暗色令牌
+val LightPrimary = QnAccent
+val LightOnPrimary = QnOnAccent
+val LightPrimaryContainer = QnAccentWash
+val LightOnPrimaryContainer = QnAccent
+val LightSecondary = QnTextMuted
+val LightOnSecondary = QnBg
+val LightSecondaryContainer = QnPanelAlt
+val LightOnSecondaryContainer = QnText
+val LightTertiary = QnAccent
+val LightOnTertiary = QnOnAccent
+val LightTertiaryContainer = QnAccentWash
+val LightOnTertiaryContainer = QnText
+val LightBackground = QnBg
+val LightOnBackground = QnText
+val LightSurface = QnPanel
+val LightOnSurface = QnText
+val LightSurfaceVariant = QnPanelAlt
+val LightOnSurfaceVariant = QnTextMuted
+val LightError = QnDanger
+val LightOnError = QnBg
+val LightErrorContainer = QnDangerWash
+val LightOnErrorContainer = QnDanger
+val LightOutline = QnLineStrong
+val LightOutlineVariant = QnLine
+val LightInverseSurface = QnText
+val LightInverseOnSurface = QnBg
+val LightInversePrimary = QnAccentDeep
 val LightScrim = Color(0xFF000000)
 
-// ========== Login Screen Background ==========
-val LoginBackground = Color(0xFF15233D)
-val LoginBackgroundDark = Color(0xFF0C1526)
-
-// ========== Dark Theme Palette（与桌面端深色一致） ==========
-val DarkPrimary = Color(0xFF7AA9FF)
-val DarkOnPrimary = Color(0xFF06224F)
-val DarkPrimaryContainer = Color(0xFF1D3A6E)
-val DarkOnPrimaryContainer = Color(0xFFDCE9FF)
-val DarkSecondary = Color(0xFFB9C4D4)
-val DarkOnSecondary = Color(0xFF23303F)
-val DarkSecondaryContainer = Color(0xFF2A3A50)
-val DarkOnSecondaryContainer = Color(0xFFDCE6F8)
-val DarkTertiary = Color(0xFFD7BDE4)
-val DarkOnTertiary = Color(0xFF3B2948)
-val DarkTertiaryContainer = Color(0xFF523F5F)
-val DarkOnTertiaryContainer = Color(0xFFF2DAFF)
-val DarkBackground = Color(0xFF0F1218)
-val DarkOnBackground = Color(0xFFE8EDF5)
-val DarkSurface = Color(0xFF161B24)
-val DarkOnSurface = Color(0xFFE8EDF5)
-val DarkSurfaceVariant = Color(0xFF1F2937)
-val DarkOnSurfaceVariant = Color(0xFFA6B0C0)
-val DarkError = Color(0xFFFFB4AB)
-val DarkOnError = Color(0xFF690005)
-val DarkErrorContainer = Color(0xFF7A1F1F)
-val DarkOnErrorContainer = Color(0xFFFFDAD6)
-val DarkOutline = Color(0xFF8D9199)
-val DarkOutlineVariant = Color(0xFF273141)
-val DarkInverseSurface = Color(0xFFE8EDF5)
-val DarkInverseOnSurface = Color(0xFF1F2937)
-val DarkInversePrimary = Color(0xFF3D7EFF)
+// 暗色令牌
+val DarkPrimary = QnAccent
+val DarkOnPrimary = QnOnAccent
+val DarkPrimaryContainer = QnAccentWash
+val DarkOnPrimaryContainer = QnAccent
+val DarkSecondary = QnTextMuted
+val DarkOnSecondary = QnBg
+val DarkSecondaryContainer = QnPanelAlt
+val DarkOnSecondaryContainer = QnText
+val DarkTertiary = QnAccent
+val DarkOnTertiary = QnOnAccent
+val DarkTertiaryContainer = QnAccentWash
+val DarkOnTertiaryContainer = QnText
+val DarkBackground = QnBg
+val DarkOnBackground = QnText
+val DarkSurface = QnPanel
+val DarkOnSurface = QnText
+val DarkSurfaceVariant = QnPanelAlt
+val DarkOnSurfaceVariant = QnTextMuted
+val DarkError = QnDanger
+val DarkOnError = QnBg
+val DarkErrorContainer = QnDangerWash
+val DarkOnErrorContainer = QnDanger
+val DarkOutline = QnLineStrong
+val DarkOutlineVariant = QnLine
+val DarkInverseSurface = QnText
+val DarkInverseOnSurface = QnBg
+val DarkInversePrimary = QnAccentDeep
 val DarkScrim = Color(0xFF000000)
 
-// ========== Status Colors ==========
-val StatusPresent = Color(0xFF3DD68C)
-val StatusPersonalLeave = Color(0xFFF2C55C)
-val StatusSickLeave = Color(0xFFF2C55C)
-val StatusAbsent = Color(0xFFF06B6B)
+// 登录页（暗色）
+val LoginBackground = QnBg
+val LoginBackgroundDark = Color(0xFF070A0C)
+
+// ========== 状态色（只用于状态灯与状态文字） ==========
+val StatusPresent = QnAccent
+val StatusPersonalLeave = QnWarn
+val StatusSickLeave = QnWarn
+val StatusAbsent = QnDanger
 val StatusMilitary = Color(0xFFB08968)
-val StatusIntern = Color(0xFF6BA3FF)
+val StatusIntern = Color(0xFF58A6FF)
 val StatusDayStudent = Color(0xFFB98AF0)
 val StatusLateReturn = Color(0xFF4ECDC4)
 val StatusLongSickLeave = Color(0xFFFF8A65)
-val StatusUnknown = Color(0xFF93A0B5)
+val StatusUnknown = QnTextDim
 val StatusFemale = Color(0xFFF06292)
-val StatusChecked = Color(0xFF3DD68C)
-val StatusUnchecked = Color(0xFF5A6577)
+val StatusChecked = QnAccent
+val StatusUnchecked = QnTextDim
 
 fun statusColor(statusCode: Int?): Color = when (statusCode) {
     0 -> StatusUnknown

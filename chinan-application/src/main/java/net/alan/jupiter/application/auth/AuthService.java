@@ -23,6 +23,7 @@ public class AuthService {
 
     public LoginResult login(String username, String password) {
         Counselor counselor = counselorRepository.findByUsername(username)
+                .or(() -> counselorRepository.findByPhone(username))
                 .orElseThrow(() -> new BizException(ErrorCode.USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(password, counselor.getPassword())) {

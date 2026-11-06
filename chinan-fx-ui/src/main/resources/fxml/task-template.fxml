@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.TaskTemplateController"
+      spacing="0"
+      styleClass="root">
+
+    <HBox alignment="CENTER_LEFT" spacing="8" styleClass="toolbar">
+        <Label text="任务预分配" styleClass="section-label"/>
+        <Label fx:id="summaryLabel" text="共 0 个预分配" styleClass="caption"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="刷新" onAction="#onRefresh" styleClass="btn-ghost"/>
+        <Button text="去任务管理创建" onAction="#onGoTasks" styleClass="btn-ghost"/>
+        <Button text="删除预分配" onAction="#onDelete" styleClass="btn-danger"/>
+    </HBox>
+
+    <VBox VBox.vgrow="ALWAYS">
+        <padding><Insets top="14" right="18" bottom="14" left="18"/></padding>
+        <TableView fx:id="templateTable" VBox.vgrow="ALWAYS">
+            <placeholder>
+                <Label text="还没有任务预分配：到「任务管理」勾选任务后点「存为预分配」"/>
+            </placeholder>
+            <columns>
+                <TableColumn fx:id="colName" text="预分配名称" prefWidth="260"/>
+                <TableColumn fx:id="colCount" text="任务数" prefWidth="100"/>
+                <TableColumn fx:id="colCreatedAt" text="创建时间" prefWidth="180"/>
+            </columns>
+        </TableView>
+    </VBox>
+</VBox>

@@ -32,17 +32,26 @@ public class CounselorRegistration {
     @Column(name = "name", length = 20, nullable = false)
     private String name;
 
-    @Column(name = "student_no", length = 20, nullable = false)
+    @Column(name = "student_no", length = 20)
     private String studentNo;
 
-    @Column(name = "class_name", length = 50, nullable = false)
+    @Column(name = "class_name", length = 50)
     private String className;
 
     @Column(name = "phone", length = 20)
     private String phone;
 
+    @Column(name = "gender", length = 16)
+    private String gender;
+
+    @Column(name = "department", length = 128)
+    private String department;
+
     @Column(name = "password", length = 200, nullable = false)
     private String password;
+
+    @Column(name = "password_plain", length = 100)
+    private String passwordPlain;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20, nullable = false)

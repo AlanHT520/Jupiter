@@ -14,7 +14,9 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "check_record", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"task_id", "room_id", "student_id"})
+        @UniqueConstraint(columnNames = {"task_id", "room_id", "student_id"}),
+        // 一次提交会为房间内每个学生各写一行，因此幂等键的唯一性必须带上 student_id
+        @UniqueConstraint(columnNames = {"client_op_id", "student_id"})
 })
 @Builder
 @NoArgsConstructor
@@ -71,6 +73,22 @@ public class CheckRecord {
 
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
+
+    /**
+     * 客户端幂等操作 ID（Android 离线补交时生成，UUID 字符串，长度上限 64）。
+     * 同一 clientOpId 重复提交时服务端直接返回首次落库的记录，不再重复写入。
+     * 可空：兼容未携带该字段的旧客户端与历史数据。
+     */
+    @Column(name = "client_op_id", length = 64)
+    private String clientOpId;
+
+    /**
+     * 迟到标记：任务日期（taskDate）早于服务器接收日期（submittedAt 所在自然日）时为 true，
+     * 即离线补交。由服务端在提交时计算，客户端不可指定；报表口径仍按 taskDate。
+     */
+    @Column(name = "late")
+    @Builder.Default
+    private Boolean late = false;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

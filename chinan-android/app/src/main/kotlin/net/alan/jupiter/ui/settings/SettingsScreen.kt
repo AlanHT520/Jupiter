@@ -1,38 +1,90 @@
 package net.alan.jupiter.ui.settings
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.EntryPoints
 import kotlinx.coroutines.launch
 import net.alan.jupiter.di.UpdateManagerEntryPoint
-import net.alan.jupiter.ui.components.ChinanCard
+import net.alan.jupiter.ui.components.QnCard
+import net.alan.jupiter.ui.components.QnGhostButton
+import net.alan.jupiter.ui.components.QnKeyValue
+import net.alan.jupiter.ui.components.QnMono
+import net.alan.jupiter.ui.components.QnPrimaryButton
+import net.alan.jupiter.ui.components.QnRadius
+import net.alan.jupiter.ui.components.QnScaffold
+import net.alan.jupiter.ui.components.QnSectionLabel
+import net.alan.jupiter.ui.components.QnStatus
 import net.alan.jupiter.ui.update.UpdateDialog
+import net.alan.jupiter.ui.theme.QnAccent
+import net.alan.jupiter.ui.theme.QnDanger
+import net.alan.jupiter.ui.theme.QnLine
+import net.alan.jupiter.ui.theme.QnPanel
+import net.alan.jupiter.ui.theme.QnPanelAlt
+import net.alan.jupiter.ui.theme.QnText
+import net.alan.jupiter.ui.theme.QnTextDim
+import net.alan.jupiter.ui.theme.QnTextMuted
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * 设置（/settings）：QnCard + 等宽条目；保留更新检查、退出登录等全部逻辑。
+ */
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onSyncClick: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showClearDialog by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+    var oldPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var passwordError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(uiState.passwordChanged) {
+        if (uiState.passwordChanged) {
+            showPasswordDialog = false
+            onLogout()
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarScope = rememberCoroutineScope()
+
+    LaunchedEffect(uiState.message) {
+        val message = uiState.message ?: return@LaunchedEffect
+        viewModel.dismissMessage()
+        snackbarHostState.showSnackbar(
+            message = message,
+            duration = SnackbarDuration.Short
+        )
+    }
 
     val context = LocalContext.current
     val entryPoint = remember {
@@ -49,168 +101,104 @@ fun SettingsScreen(
     var downloading by remember { mutableStateOf(false) }
     var checkingUpdate by remember { mutableStateOf(false) }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("设置", fontWeight = FontWeight.ExtraBold)
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        }
+    QnScaffold(
+        path = "/settings",
+        status = if (checkingUpdate) QnStatus.RUNNING else QnStatus.OK,
+        onBack = onBackClick
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            ChinanCard {
-                Column(
-                    modifier = Modifier.padding(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Surface(
-                        modifier = Modifier.size(64.dp),
-                        shape = CircleShape,
-                        color = MaterialTheme.colorScheme.primaryContainer
-                    ) {
-                        Icon(
-                            Icons.Default.School,
-                            contentDescription = null,
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                QnCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
                             modifier = Modifier
-                                .padding(14.dp)
-                                .fillMaxSize(),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "Chinan",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        "Kotlin Edition",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        "宿舍查寝管理系统",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-
-                    Spacer(modifier = Modifier.height(20.dp))
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                    Spacer(modifier = Modifier.height(20.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        InfoCard(
-                            icon = Icons.Outlined.Info,
-                            label = "版本",
-                            value = "v-0.8.9",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        InfoCard(
-                            icon = Icons.Outlined.Android,
-                            label = "平台",
-                            value = "Android",
-                            tint = MaterialTheme.colorScheme.tertiary
-                        )
-                        InfoCard(
-                            icon = Icons.Outlined.Layers,
-                            label = "构建",
-                            value = "Release",
-                            tint = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
-            }
-
-            ChinanCard {
-                Column(modifier = Modifier.padding(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            modifier = Modifier.size(32.dp),
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                                .size(44.dp)
+                                .background(QnPanelAlt, QnRadius)
+                                .border(1.dp, QnLine, QnRadius),
+                            contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                Icons.Outlined.Copyright,
+                                Icons.Default.School,
                                 contentDescription = null,
-                                modifier = Modifier
-                                    .padding(6.dp)
-                                    .fillMaxSize(),
-                                tint = MaterialTheme.colorScheme.primary
+                                modifier = Modifier.size(22.dp),
+                                tint = QnAccent
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            "版权信息",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "寝安 QIN'AN",
+                                color = QnText,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = "KOTLIN EDITION · 宿舍查寝",
+                                color = QnAccent,
+                                fontFamily = QnMono,
+                                fontSize = 9.5.sp
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = QnLine, thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    QnKeyValue(label = "VERSION", value = "1.0.0")
+                    QnKeyValue(label = "PLATFORM", value = "Android")
+                    QnKeyValue(label = "BUILD", value = "Release")
+                }
+
+                QnCard {
+                    QnSectionLabel("LICENSE")
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        "本软件著作权归张浩天所有。未经作者事先书面授权，任何个人或组织不得使用、复制、修改或分发本软件，不得将其用于商业用途，亦不得将其作为任何公开展示的组成部分。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = MaterialTheme.typography.bodyMedium.lineHeight
+                        text = "本软件著作权归张浩天所有。未经作者事先书面授权，任何个人或组织不得使用、复制、修改或分发本软件，不得将其用于商业用途，亦不得将其作为任何公开展示的组成部分。",
+                        color = QnTextMuted,
+                        fontSize = 11.sp,
+                        lineHeight = 17.sp
                     )
                 }
-            }
 
-            ChinanCard {
-                Column(modifier = Modifier.padding(4.dp)) {
+                QnCard {
+                    QnSectionLabel("UPDATE")
+                    Spacer(modifier = Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            modifier = Modifier.size(32.dp),
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
-                        ) {
-                            Icon(
-                                Icons.Outlined.SystemUpdateAlt,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .padding(6.dp)
-                                    .fillMaxSize(),
-                                tint = MaterialTheme.colorScheme.tertiary
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "从服务器检查最新版本",
+                                color = QnTextMuted,
+                                fontSize = 11.sp
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "APK · DOWNLOAD MANAGER",
+                                color = QnTextDim,
+                                fontFamily = QnMono,
+                                fontSize = 9.5.sp
                             )
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            "软件更新",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
+                        if (checkingUpdate) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = QnAccent
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(
+                    Spacer(modifier = Modifier.height(10.dp))
+                    QnPrimaryButton(
+                        text = if (checkingUpdate) "检查中..." else "检查更新",
                         onClick = {
                             checkingUpdate = true
                             updateManager.checkForUpdate(
@@ -241,137 +229,246 @@ fun SettingsScreen(
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !checkingUpdate,
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        if (checkingUpdate) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(18.dp),
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("检查中...")
-                        } else {
-                            Icon(
-                                Icons.Outlined.Refresh,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("检查更新")
-                        }
-                    }
+                        enabled = !checkingUpdate
+                    )
                 }
-            }
 
-            Card(
-                shape = MaterialTheme.shapes.large,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                )
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            modifier = Modifier.size(32.dp),
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
-                        ) {
-                            Icon(
-                                Icons.Outlined.Warning,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .padding(6.dp)
-                                    .fillMaxSize(),
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            "账户操作",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                QnCard {
+                    QnSectionLabel("LOCAL DATA")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "本地查寝记录永久保留，退出登录不会删除；只有这里可以清除。",
+                        color = QnTextMuted,
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider(color = QnLine, thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    QnKeyValue(
+                        label = "RECORDS",
+                        value = "${uiState.records}（ACKED ${uiState.acked}）"
+                    )
+                    QnKeyValue(
+                        label = "OUTBOX",
+                        value = "${uiState.outbox}（待同步 ${uiState.pending}）"
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        QnGhostButton(
+                            text = if (uiState.isClearing) "清除中..." else "清除本地数据",
+                            onClick = { showClearDialog = true },
+                            modifier = Modifier.weight(1f),
+                            enabled = !uiState.isClearing
+                        )
+                        QnGhostButton(
+                            text = "缓存与同步",
+                            onClick = onSyncClick,
+                            modifier = Modifier.weight(1f)
                         )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedButton(
+                }
+
+                QnCard {
+                    QnSectionLabel("ACCOUNT")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "退出登录后需要重新输入用户名和密码才能使用",
+                        color = QnTextMuted,
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    QnGhostButton(
+                        text = "修改密码",
+                        onClick = {
+                            passwordError = null
+                            showPasswordDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    QnGhostButton(
+                        text = "退出登录",
                         onClick = { showLogoutDialog = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = MaterialTheme.colorScheme.error
-                        ),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
-                    ) {
-                        Icon(
-                            Icons.Default.Logout,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("退出登录")
-                    }
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(12.dp)
+            ) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    containerColor = QnPanel,
+                    contentColor = QnText,
+                    shape = QnRadius,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+            }
         }
+    }
+
+    if (showPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog = false },
+            containerColor = QnPanel,
+            shape = QnRadius,
+            tonalElevation = 0.dp,
+            title = {
+                Text(
+                    text = "修改密码",
+                    color = QnText,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "修改成功后 token 会失效，需要重新登录；本地记录保留。",
+                        color = QnTextMuted,
+                        fontSize = 11.sp
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = oldPassword,
+                        onValueChange = { oldPassword = it },
+                        label = { Text("旧密码") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = QnRadius,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = newPassword,
+                        onValueChange = { newPassword = it },
+                        label = { Text("新密码（至少 4 位）") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = QnRadius,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = { confirmPassword = it },
+                        label = { Text("确认新密码") },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = QnRadius,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    passwordError?.let {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(text = it, color = QnDanger, fontSize = 11.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                QnPrimaryButton(
+                    text = if (uiState.isChangingPassword) "修改中..." else "确认修改",
+                    enabled = !uiState.isChangingPassword,
+                    onClick = {
+                        passwordError = when {
+                            oldPassword.isBlank() -> "请输入旧密码"
+                            newPassword.length < 4 -> "新密码至少 4 位"
+                            newPassword != confirmPassword -> "两次输入的新密码不一致"
+                            else -> null
+                        }
+                        if (passwordError == null) {
+                            viewModel.changePassword(oldPassword, newPassword)
+                        }
+                    }
+                )
+            },
+            dismissButton = {
+                QnGhostButton(
+                    text = "取消",
+                    onClick = { showPasswordDialog = false }
+                )
+            }
+        )
     }
 
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
-            shape = MaterialTheme.shapes.large,
-            icon = {
-                Surface(
-                    modifier = Modifier.size(52.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.errorContainer
-                ) {
-                    Icon(
-                        Icons.Default.Logout,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .padding(12.dp)
-                            .fillMaxSize(),
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            },
+            containerColor = QnPanel,
+            shape = QnRadius,
+            tonalElevation = 0.dp,
             title = {
                 Text(
-                    "确认退出",
+                    text = "确认退出",
+                    color = QnText,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    "退出登录后需要重新输入用户名和密码才能使用",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "退出登录后需要重新输入用户名和密码才能使用",
+                    color = QnTextMuted,
+                    fontSize = 12.sp
                 )
             },
             confirmButton = {
-                Button(
+                QnPrimaryButton(
+                    text = "确认退出",
                     onClick = {
                         showLogoutDialog = false
                         onLogout()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
-                    ),
-                    shape = MaterialTheme.shapes.medium
-                ) {
-                    Text("确认退出")
-                }
+                    }
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("取消")
-                }
+                QnGhostButton(
+                    text = "取消",
+                    onClick = { showLogoutDialog = false }
+                )
+            }
+        )
+    }
+
+    if (showClearDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDialog = false },
+            containerColor = QnPanel,
+            shape = QnRadius,
+            tonalElevation = 0.dp,
+            title = {
+                Text(
+                    text = "清除本地数据",
+                    color = QnText,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "将删除本机所有账号的查寝记录、待提交队列、缓存快照与证明照片，删除后不可恢复。确定继续？",
+                    color = QnTextMuted,
+                    fontSize = 12.sp
+                )
+            },
+            confirmButton = {
+                QnPrimaryButton(
+                    text = "确认清除",
+                    onClick = {
+                        showClearDialog = false
+                        viewModel.clearLocalData()
+                    }
+                )
+            },
+            dismissButton = {
+                QnGhostButton(
+                    text = "取消",
+                    onClick = { showClearDialog = false }
+                )
             }
         )
     }
@@ -389,48 +486,5 @@ fun SettingsScreen(
             },
             onDismiss = { showUpdateDialog = false }
         )
-    }
-}
-
-@Composable
-private fun InfoCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    value: String,
-    tint: androidx.compose.ui.graphics.Color
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Surface(
-            modifier = Modifier.size(44.dp),
-            shape = CircleShape,
-            color = tint.copy(alpha = 0.1f)
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(10.dp)
-                    .fillMaxSize(),
-                tint = tint
-            )
-        }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                value,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
     }
 }

@@ -20,6 +20,8 @@ import net.alan.jupiter.ui.register.RegisterScreen
 import net.alan.jupiter.ui.room.RoomCheckScreen
 import net.alan.jupiter.ui.profile.ProfileScreen
 import net.alan.jupiter.ui.settings.SettingsScreen
+import net.alan.jupiter.ui.summary.GlobalSummaryScreen
+import net.alan.jupiter.ui.sync.SyncStatusScreen
 import net.alan.jupiter.ui.tasks.TaskListScreen
 import net.alan.jupiter.ui.tasks.TaskListViewModel
 
@@ -67,6 +69,8 @@ fun AppNavGraph(
                 },
                 onSettingsClick = { navController.navigate(Screen.Settings.route) },
                 onProfileClick = { navController.navigate(Screen.Profile.route) },
+                onSummaryClick = { navController.navigate(Screen.Summary.route) },
+                onSyncClick = { navController.navigate(Screen.Sync.route) },
                 onLogout = {
                     taskListViewModel.logout()
                     navController.navigate(Screen.Login.route) {
@@ -129,6 +133,11 @@ fun AppNavGraph(
                 taskId = taskId,
                 roomId = roomId,
                 roomNumber = roomNumber,
+                // 概览页路由参数里带着楼栋名，房间页把它用于顶部路径 /check/<building>/<room>
+                buildingName = navController.previousBackStackEntry
+                    ?.arguments
+                    ?.getString("buildingName")
+                    ?: "",
                 onBackClick = { navController.popBackStack() },
                 onSubmitSuccess = {
                     navController.previousBackStackEntry
@@ -143,12 +152,26 @@ fun AppNavGraph(
             val loginViewModel: LoginViewModel = hiltViewModel()
             SettingsScreen(
                 onBackClick = { navController.popBackStack() },
+                onSyncClick = { navController.navigate(Screen.Sync.route) },
                 onLogout = {
                     loginViewModel.logout()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Screen.Summary.route) {
+            GlobalSummaryScreen(
+                onBackClick = { navController.popBackStack() },
+                onSyncClick = { navController.navigate(Screen.Sync.route) }
+            )
+        }
+
+        composable(Screen.Sync.route) {
+            SyncStatusScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 

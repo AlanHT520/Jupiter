@@ -632,14 +632,16 @@ public class ReportQueryService {
         // 预加载所有 ClassInfo
         List<ClassInfo> allClasses = classInfoRepository.findAll();
 
-        // 查找指定学院下的所有班级（名称 + ID，支持字符串和 FK 两种关联）
+        // 查找指定学院下的所有班级（collegeName 为空表示全部班级）
         Set<String> collegeClassNames = allClasses.stream()
-                .filter(c -> collegeName.equals(c.getDepartment()))
+                .filter(c -> collegeName == null || collegeName.isBlank()
+                        || collegeName.equals(c.getDepartment()))
                 .map(ClassInfo::getName)
                 .collect(Collectors.toSet());
 
         Set<String> collegeClassIds = allClasses.stream()
-                .filter(c -> collegeName.equals(c.getDepartment()))
+                .filter(c -> collegeName == null || collegeName.isBlank()
+                        || collegeName.equals(c.getDepartment()))
                 .map(ClassInfo::getId)
                 .collect(Collectors.toSet());
 
@@ -811,11 +813,31 @@ public class ReportQueryService {
             CheckStatus.INTERN, 6
     );
 
+    private java.time.LocalDate leaveStartDate(Student s, CheckStatus status) {
+        return switch (status) {
+            case MILITARY -> s.getMilitaryStartDate();
+            case INTERN -> s.getInternStartDate();
+            case DAY_STUDENT -> s.getDayStudentStartDate();
+            case LONG_SICK_LEAVE -> s.getLongSickLeaveStartDate();
+            default -> null;
+        };
+    }
+
+    private java.time.LocalDate leaveEndDate(Student s, CheckStatus status) {
+        return switch (status) {
+            case MILITARY -> s.getMilitaryEndDate();
+            case INTERN -> s.getInternEndDate();
+            case DAY_STUDENT -> s.getDayStudentEndDate();
+            case LONG_SICK_LEAVE -> s.getLongSickLeaveEndDate();
+            default -> null;
+        };
+    }
+
     public LeaveDetailData buildLeaveDetail(String collegeName,
                                              Map<String, CheckRecord> recordMap,
-                                             String date) {
-        List<ClassInfo> classes = classInfoRepository.findAll().stream()
-                .filter(c -> collegeName.equals(c.getDepartment()))
+                                             String date) {        List<ClassInfo> classes = classInfoRepository.findAll().stream()
+                .filter(c -> collegeName == null || collegeName.isBlank()
+                        || collegeName.equals(c.getDepartment()))
                 .toList();
 
         LeaveDetailData data = new LeaveDetailData();
@@ -873,11 +895,22 @@ public class ReportQueryService {
 
                 if (!isNormalStatus(status)) {
                     CheckRecord record = recordMap != null ? recordMap.get(s.getId()) : null;
+                    var start = leaveStartDate(s, status);
+                    var end = leaveEndDate(s, status);
+                    Integer days = (start != null && end != null)
+                            ? (int) (java.time.temporal.ChronoUnit.DAYS.between(start, end) + 1)
+                            : null;
                     details.add(LeaveDetailData.LeaveDetailItem.builder()
                             .studentName(s.getName())
+                            .studentNo(s.getStudentNo())
                             .status(status)
                             .gender(s.getGender())
+                            .phone(s.getPhone())
+                            .startDate(start != null ? start.toString() : null)
+                            .endDate(end != null ? end.toString() : null)
+                            .days(days)
                             .proofFile(record != null ? record.getProofFile() : null)
+                            .remark(s.getRemark())
                             .build());
                 }
             }

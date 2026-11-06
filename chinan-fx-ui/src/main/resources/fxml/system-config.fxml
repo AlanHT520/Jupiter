@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="net.alan.jupiter.fx.controller.SystemConfigController"
+      spacing="12" styleClass="root">
+    <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
+
+    <HBox alignment="CENTER_LEFT" spacing="12">
+        <VBox spacing="2">
+            <Label text="SYSTEM / CONFIG" styleClass="section-label"/>
+            <Label text="系统配置" styleClass="page-title"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="刷新" styleClass="btn-ghost" onAction="#onRefresh"/>
+    </HBox>
+
+    <Label text="只读运行环境；可写配置请改 application.yml / 环境变量后重启。" styleClass="caption"/>
+
+    <VBox spacing="0" styleClass="card">
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="PROFILE" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="profileValue" text="-" styleClass="mono"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="数据库类型" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="dbValue" text="-" styleClass="mono"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="数据库 URL" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="dbUrlValue" text="-" styleClass="mono" wrapText="true"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="TCP 服务" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="tcpValue" text="-" styleClass="mono"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="JAVA" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="javaValue" text="-" styleClass="mono"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="操作系统" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="osValue" text="-" styleClass="mono"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="时区" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="timezoneValue" text="-" styleClass="mono"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="工作目录" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="workdirValue" text="-" styleClass="mono" wrapText="true"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="当前用户" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="userValue" text="-" styleClass="mono"/>
+        </HBox>
+        <HBox styleClass="list-row" alignment="CENTER_LEFT">
+            <Label text="版本" styleClass="section-label" minWidth="190"/>
+            <Label fx:id="versionValue" text="-" styleClass="mono"/>
+        </HBox>
+    </VBox>
+</VBox>

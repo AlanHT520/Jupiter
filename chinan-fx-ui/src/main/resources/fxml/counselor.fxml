@@ -11,13 +11,14 @@
       styleClass="root">
 
     <HBox alignment="CENTER_LEFT" spacing="8" styleClass="toolbar">
+        <Label text="COUNSELORS" styleClass="section-label"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Button text="刷新" onAction="#onRefresh" styleClass="btn-ghost"/>
         <Button text="导出账户" onAction="#onExportAccounts" styleClass="btn-ghost"/>
     </HBox>
 
     <VBox VBox.vgrow="ALWAYS">
-        <padding><Insets top="18" right="22" bottom="18" left="22"/></padding>
+        <padding><Insets top="14" right="18" bottom="14" left="18"/></padding>
         <TableView fx:id="counselorTable" VBox.vgrow="ALWAYS">
             <placeholder>
                 <Label text="暂无查宿者账号，可通过「文件 → 导入工作人员名单」批量导入"/>

@@ -126,8 +126,18 @@ class TcpClient(
         } else emptyList()
     }
 
+    /**
+     * 提交查寝结果。
+     *
+     * `clientOpId` 是业务幂等键（一个房间一个批次），服务端按 (clientOpId, studentId) 去重；
+     * 它和 TCP 帧里的 requestId（多路复用）是两码事，重试时必须复用同一个值。
+     */
     suspend fun submitCheck(
-        token: String, taskId: String, roomId: String, students: List<StudentCheckItem>
+        token: String,
+        taskId: String,
+        roomId: String,
+        students: List<StudentCheckItem>,
+        clientOpId: String? = null
     ) {
         val studentsElement = json.encodeToJsonElement(
             ListSerializer(StudentCheckItem.serializer()), students
@@ -136,6 +146,7 @@ class TcpClient(
             put("token", token)
             put("taskId", taskId)
             put("roomId", roomId)
+            if (!clientOpId.isNullOrBlank()) put("clientOpId", clientOpId)
             put("students", studentsElement)
         }
         send("SUBMIT_CHECK", fullPayload)
@@ -167,23 +178,33 @@ class TcpClient(
         send("DELETE_PROOF", payload)
     }
 
-    suspend fun getRegistrationStatus(): Boolean = withContext(Dispatchers.IO) {
-        val data = send("GET_REGISTRATION_STATUS", buildJsonObject {})
+    suspend fun changePassword(token: String, oldPassword: String, newPassword: String) {
+        val payload = buildJsonObject {
+            put("token", token)
+            put("oldPassword", oldPassword)
+            put("newPassword", newPassword)
+        }
+        send("CHANGE_PASSWORD", payload)
+    }
+
+    suspend fun getRegistrationStatus(): Boolean = withContext(Dispatchers.IO) {        val data = send("GET_REGISTRATION_STATUS", buildJsonObject {})
         data["enabled"]?.jsonPrimitive?.booleanOrNull ?: false
     }
 
     suspend fun submitRegistration(
         name: String,
-        studentNo: String,
-        className: String,
+        gender: String,
         phone: String,
+        department: String,
+        className: String,
         password: String
     ): String = withContext(Dispatchers.IO) {
         val payload = buildJsonObject {
             put("name", name)
-            put("studentNo", studentNo)
-            put("className", className)
+            put("gender", gender)
             put("phone", phone)
+            put("department", department)
+            put("className", className)
             put("password", password)
         }
         val data = send("REGISTER", payload)

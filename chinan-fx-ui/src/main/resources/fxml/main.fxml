@@ -8,45 +8,86 @@
             fx:controller="net.alan.jupiter.fx.controller.MainController"
             styleClass="root-layout">
 
+    <top>
+        <HBox styleClass="top-bar">
+            <HBox styleClass="brand-mark" alignment="CENTER_LEFT">
+                <Label text="寝安" styleClass="brand-name"/>
+                <Label text="宿舍查寝系统 v1.0.0" styleClass="brand-ver"/>
+            </HBox>
+
+            <Label fx:id="pathLabel" text="寝安 / 仪表盘" styleClass="path-label"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <MenuBar styleClass="app-menu-bar">
+                <Menu text="文件">
+                    <MenuItem text="导入宿舍数据" onAction="#onImportRoster"/>
+                    <MenuItem text="导入工作人员名单" onAction="#onImportCounselors"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="导出查寝报表" onAction="#onExportReport"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="退出" onAction="#onExit"/>
+                </Menu>
+                <Menu text="帮助">
+                    <MenuItem text="关于寝安" onAction="#onAbout"/>
+                </Menu>
+            </MenuBar>
+
+            <HBox styleClass="shell-right">
+                <Label fx:id="connDot" text="●" styleClass="conn-dot" visible="false" managed="false"/>
+                <Label fx:id="connLabel" text="" styleClass="conn-text" visible="false" managed="false"/>
+                <Label fx:id="clockLabel" text="--:--:--" styleClass="clock-label"/>
+            </HBox>
+        </HBox>
+    </top>
+
     <left>
         <VBox styleClass="sidebar">
             <VBox styleClass="brand-block">
-                <Label text="Chinan" styleClass="brand-title"/>
-                <Label text="JAVA EDITION · 寝室管理" styleClass="brand-sub"/>
+                <Label text="寝安" styleClass="brand-title"/>
+                <Label text="宿舍查寝系统" styleClass="brand-sub"/>
             </VBox>
 
             <Label text="工作台" styleClass="nav-section-label"/>
             <fx:define>
                 <ToggleGroup fx:id="navGroup"/>
             </fx:define>
-            <ToggleButton text="首页概览" styleClass="nav-button" maxWidth="Infinity"
+            <ToggleButton text="01  仪表盘" styleClass="nav-button" maxWidth="Infinity"
                           toggleGroup="$navGroup" userData="/fxml/dashboard.fxml" onAction="#onNav"/>
-            <ToggleButton text="学生名册" styleClass="nav-button" maxWidth="Infinity"
-                          toggleGroup="$navGroup" userData="/fxml/roster.fxml" onAction="#onNav"/>
-            <ToggleButton text="查寝任务" styleClass="nav-button" maxWidth="Infinity"
+            <ToggleButton text="02  任务管理" styleClass="nav-button" maxWidth="Infinity"
                           toggleGroup="$navGroup" userData="/fxml/task.fxml" onAction="#onNav"/>
-            <ToggleButton text="查寝记录" styleClass="nav-button" maxWidth="Infinity"
+            <ToggleButton text="03  查寝记录" styleClass="nav-button" maxWidth="Infinity"
                           toggleGroup="$navGroup" userData="/fxml/check-record.fxml" onAction="#onNav"/>
-            <ToggleButton text="数据报表" styleClass="nav-button" maxWidth="Infinity"
-                          toggleGroup="$navGroup" userData="/fxml/report.fxml" onAction="#onNav"/>
 
-            <Label text="基础数据" styleClass="nav-section-label"/>
-            <ToggleButton text="楼栋总览" styleClass="nav-button" maxWidth="Infinity"
-                          toggleGroup="$navGroup" userData="/fxml/building.fxml" onAction="#onNav"/>
-            <ToggleButton text="查宿者管理" styleClass="nav-button" maxWidth="Infinity"
+            <Label text="数据" styleClass="nav-section-label"/>
+            <ToggleButton text="04  花名册" styleClass="nav-button" maxWidth="Infinity"
+                          toggleGroup="$navGroup" userData="/fxml/roster.fxml" onAction="#onNav"/>
+            <ToggleButton text="05  工作人员" styleClass="nav-button" maxWidth="Infinity"
                           toggleGroup="$navGroup" userData="/fxml/counselor.fxml" onAction="#onNav"/>
-            <ToggleButton text="注册管理" styleClass="nav-button" maxWidth="Infinity"
+            <ToggleButton text="06  楼栋结构" styleClass="nav-button" maxWidth="Infinity"
+                          toggleGroup="$navGroup" userData="/fxml/building.fxml" onAction="#onNav"/>
+            <ToggleButton text="07  导入导出" styleClass="nav-button" maxWidth="Infinity"
+                          toggleGroup="$navGroup" userData="/fxml/import-export.fxml" onAction="#onNav"/>
+            <ToggleButton text="08  注册审核" styleClass="nav-button" maxWidth="Infinity"
                           toggleGroup="$navGroup" userData="/fxml/registration-management.fxml" onAction="#onNav"/>
 
+            <Label text="预分配" styleClass="nav-section-label"/>
+            <ToggleButton text="12  任务预分配" styleClass="nav-button" maxWidth="Infinity"
+                          toggleGroup="$navGroup" userData="/fxml/task-template.fxml" onAction="#onNav"/>
+
             <Label text="系统" styleClass="nav-section-label"/>
-            <ToggleButton text="系统日志" styleClass="nav-button" maxWidth="Infinity"
+            <ToggleButton text="09  日志查看" styleClass="nav-button" maxWidth="Infinity"
                           toggleGroup="$navGroup" userData="/fxml/log-viewer.fxml" onAction="#onNav"/>
+            <ToggleButton text="10  报表" styleClass="nav-button" maxWidth="Infinity"
+                          toggleGroup="$navGroup" userData="/fxml/report.fxml" onAction="#onNav"/>
+            <ToggleButton text="11  系统配置" styleClass="nav-button" maxWidth="Infinity"
+                          toggleGroup="$navGroup" userData="/fxml/system-config.fxml" onAction="#onNav"/>
 
             <Region VBox.vgrow="ALWAYS"/>
 
             <VBox styleClass="sidebar-footer">
                 <Label fx:id="sideUserName" text="桌面端" styleClass="sidebar-footer-title"/>
-                <Label text="v-0.8.9 · JavaFX 21" styleClass="sidebar-footer-sub"/>
+                <Label text="v1.0.0 · JavaFX 21" styleClass="sidebar-footer-sub"/>
             </VBox>
         </VBox>
     </left>
@@ -55,26 +96,12 @@
         <BorderPane>
             <top>
                 <HBox styleClass="header-bar">
-                    <VBox spacing="2">
-                        <Label fx:id="pageTitleLabel" text="首页概览" styleClass="header-title"/>
-                        <Label fx:id="pageSubtitleLabel" text="当前数据概况与近期查寝任务" styleClass="header-subtitle"/>
+                    <VBox spacing="1">
+                        <Label fx:id="pageTitleLabel" text="仪表盘" styleClass="header-title"/>
+                        <Label fx:id="pageSubtitleLabel" text="实时统计与事件流" styleClass="header-subtitle"/>
                     </VBox>
 
                     <Region HBox.hgrow="ALWAYS"/>
-
-                    <MenuBar styleClass="app-menu-bar">
-                        <Menu text="文件">
-                            <MenuItem text="导入宿舍数据" onAction="#onImportRoster"/>
-                            <MenuItem text="导入工作人员名单" onAction="#onImportCounselors"/>
-                            <SeparatorMenuItem/>
-                            <MenuItem text="导出查寝报表" onAction="#onExportReport"/>
-                            <SeparatorMenuItem/>
-                            <MenuItem text="退出" onAction="#onExit"/>
-                        </Menu>
-                        <Menu text="帮助">
-                            <MenuItem text="关于 Chinan" onAction="#onAbout"/>
-                        </Menu>
-                    </MenuBar>
 
                     <HBox styleClass="user-chip">
                         <Label fx:id="avatarLabel" text="A" styleClass="avatar-circle"/>
@@ -88,4 +115,26 @@
             </center>
         </BorderPane>
     </center>
+
+    <bottom>
+        <HBox styleClass="status-bar-shell">
+            <HBox styleClass="status-left">
+                <Label fx:id="dbLabel" text="" styleClass="status-item" visible="false" managed="false"/>
+                <Label text="│" styleClass="status-sep"/>
+                <Label fx:id="tcpStatusLabel" text="" styleClass="status-item-strong" visible="false" managed="false"/>
+                <Label text="│" styleClass="status-sep"/>
+                <Label fx:id="profileLabel" text="" styleClass="status-item" visible="false" managed="false"/>
+            </HBox>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <HBox styleClass="status-right">
+                <Label fx:id="statusUserLabel" text="用户 -" styleClass="status-item-strong"/>
+                <Label text="│" styleClass="status-sep"/>
+                <Label fx:id="roleLabel" text="角色 -" styleClass="status-item"/>
+                <Label text="│" styleClass="status-sep"/>
+                <Label fx:id="versionLabel" text="v1.0.0" styleClass="status-item"/>
+            </HBox>
+        </HBox>
+    </bottom>
 </BorderPane>

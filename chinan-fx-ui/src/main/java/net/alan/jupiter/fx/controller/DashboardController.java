@@ -1,5 +1,7 @@
 package net.alan.jupiter.fx.controller;
 
+import javafx.beans.binding.Bindings;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
@@ -10,11 +12,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.alan.jupiter.application.dashboard.DashboardService;
 import net.alan.jupiter.domain.model.Task;
+import net.alan.jupiter.fx.live.LiveStats;
 import net.alan.jupiter.fx.util.FxUtils;
 import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
-import org.kordamp.ikonli.javafx.FontIcon;
 import org.springframework.stereotype.Component;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
@@ -23,6 +26,9 @@ import java.util.List;
 public class DashboardController {
 
     private final DashboardService dashboardService;
+    private final LiveStats liveStats;
+
+    private static final DateTimeFormatter LIVE_TS = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     @FXML
     private Label buildingCountLabel;
@@ -37,11 +43,70 @@ public class DashboardController {
     private Label activeTaskLabel;
 
     @FXML
+    private Label liveShouldLabel;
+
+    @FXML
+    private Label liveActualLabel;
+
+    @FXML
+    private Label liveLeaveLabel;
+
+    @FXML
+    private Label liveAbsentLabel;
+
+    @FXML
+    private Label liveRateLabel;
+
+    @FXML
+    private Label liveUpdatedLabel;
+
+    @FXML
+    private VBox liveEventBox;
+
+    @FXML
     private VBox recentTaskBox;
 
     @FXML
     public void initialize() {
         loadStats();
+        bindLiveStats();
+    }
+
+    private void bindLiveStats() {
+        liveShouldLabel.textProperty().bind(liveStats.shouldCountProperty().asString());
+        liveActualLabel.textProperty().bind(liveStats.actualCountProperty().asString());
+        liveLeaveLabel.textProperty().bind(liveStats.leaveCountProperty().asString());
+        liveAbsentLabel.textProperty().bind(liveStats.absentCountProperty().asString());
+        liveRateLabel.textProperty().bind(Bindings.createStringBinding(
+                () -> String.format("%.1f%%", liveStats.rateProperty().get()),
+                liveStats.rateProperty()));
+
+        liveStats.getEvents().addListener((ListChangeListener<String>) change -> renderLiveEvents());
+        liveStats.updatedAtProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue != null) {
+                liveUpdatedLabel.setText("UPDATED " + newValue.format(LIVE_TS));
+            }
+        });
+
+        renderLiveEvents();
+        liveStats.refreshAsync();
+    }
+
+    private void renderLiveEvents() {
+        liveEventBox.getChildren().clear();
+        if (liveStats.getEvents().isEmpty()) {
+            Label empty = new Label("_ 等待下一条事件");
+            empty.getStyleClass().add("event-msg");
+            liveEventBox.getChildren().add(empty);
+            return;
+        }
+        liveStats.getEvents().stream().limit(8).forEach(line -> {
+            Label row = new Label(line);
+            row.getStyleClass().add("event-msg");
+            row.setMaxWidth(Double.MAX_VALUE);
+            row.setPadding(new javafx.geometry.Insets(5, 10, 5, 10));
+            liveEventBox.getChildren().add(row);
+        });
     }
 
     private void loadStats() {

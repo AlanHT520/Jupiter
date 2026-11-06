@@ -1,5 +1,5 @@
 plugins {
-    id("jupiter.java-conventions")
+    id("chinan.java-conventions")
     id("io.spring.dependency-management")
 }
 

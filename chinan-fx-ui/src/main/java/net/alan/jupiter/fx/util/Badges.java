@@ -12,7 +12,8 @@ public final class Badges {
     }
 
     public static Label of(String text, String variant) {
-        Label label = new Label(text == null || text.isBlank() ? "-" : text);
+        String display = (text == null || text.isBlank()) ? "-" : "● " + text;
+        Label label = new Label(display);
         label.getStyleClass().addAll("badge", "badge-" + (variant == null ? "muted" : variant));
         return label;
     }

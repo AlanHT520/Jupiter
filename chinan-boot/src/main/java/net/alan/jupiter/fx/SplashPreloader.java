@@ -1,234 +1,206 @@
 package net.alan.jupiter.fx;
 
 import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.application.Preloader;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
+/**
+ * 启动加载页：细线进度条 + 百分比 + 阶段文案。
+ * 进度由 FxLauncher 的阶段通知驱动，动画全部用 JavaFX 时间线实现。
+ */
 public class SplashPreloader extends Preloader {
 
+    private static final Color BG = Color.web("#0B0E11");
+    private static final Color PANEL = Color.web("#11161B");
+    private static final Color LINE = Color.web("#222B32");
+    private static final Color TRACK = Color.web("#1A2228");
+    private static final Color TEXT = Color.web("#E6EDF0");
+    private static final Color MUTED = Color.web("#8A97A0");
+    private static final Color DIM = Color.web("#5A666E");
+    private static final Color ACCENT = Color.web("#3DDC97");
+
+    private static final int TOTAL_STAGES = 6;
+
     private Stage stage;
-    private Label statusLabel;
-    private Label dotsLabel;
-    private Timeline dotsTimeline;
-    private int dotCount = 0;
+    private Label stageLabel;
+    private Label stepLabel;
+    private Label percentLabel;
+    private Label counterLabel;
+    private Rectangle fill;
+    private Circle head;
 
-    private Label codeLabel;
-    private Label cursorLabel;
-    private Timeline typingTimeline;
-    private Timeline cursorTimeline;
-    private int charIndex = 0;
-
-    private static final String CODE_TEXT =
-            "public class Main {\n" +
-            "    static void main() {\n" +
-            "        IO.println(\"Hello, Chinan!\");\n" +
-            "    }\n" +
-            "}";
+    private final DoubleProperty progress = new SimpleDoubleProperty(0);
+    private Timeline progressAnim;
+    private double targetProgress = 0;
+    private int stageIndex = 0;
 
     @Override
     public void start(Stage stage) {
         this.stage = stage;
         stage.initStyle(StageStyle.UNDECORATED);
 
-        Label titleLabel = new Label("Chinan");
-        titleLabel.setFont(Font.font("Segoe UI", FontWeight.BOLD, 40));
-        titleLabel.setTextFill(Color.WHITE);
+        Label title = new Label("寝安");
+        title.setFont(Font.font("Microsoft YaHei UI", FontWeight.BOLD, 32));
+        title.setTextFill(TEXT);
 
-        Label editionLabel = new Label("Java Edition");
-        editionLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 16));
-        editionLabel.setTextFill(Color.rgb(130, 130, 130));
+        Label subtitle = new Label("宿舍查寝系统");
+        subtitle.setFont(Font.font("Microsoft YaHei UI", FontWeight.NORMAL, 12));
+        subtitle.setTextFill(MUTED);
 
-        Label subtitleLabel = new Label("寝室管理系统");
-        subtitleLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 15));
-        subtitleLabel.setTextFill(Color.rgb(130, 130, 130));
+        VBox brand = new VBox(2, title, subtitle);
+        brand.setAlignment(Pos.CENTER_LEFT);
 
-        VBox topBox = new VBox(2);
-        topBox.setPadding(new Insets(48, 0, 0, 52));
-        topBox.getChildren().addAll(titleLabel, editionLabel, subtitleLabel);
+        Label version = new Label("v1.0.0");
+        version.setFont(Font.font("Consolas", FontWeight.NORMAL, 10));
+        version.setTextFill(DIM);
 
-        statusLabel = new Label("正在启动服务...");
-        statusLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 13));
-        statusLabel.setTextFill(Color.rgb(150, 150, 150));
+        Region headerSpacer = new Region();
+        HBox.setHgrow(headerSpacer, Priority.ALWAYS);
+        HBox header = new HBox(10, brand, headerSpacer, version);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(0, 0, 26, 0));
 
-        dotsLabel = new Label("");
-        dotsLabel.setFont(Font.font("Consolas", FontWeight.NORMAL, 13));
-        dotsLabel.setTextFill(Color.rgb(150, 150, 150));
-        dotsLabel.setMinWidth(32);
+        stageLabel = new Label("正在启动");
+        stageLabel.setFont(Font.font("Microsoft YaHei UI", FontWeight.BOLD, 13));
+        stageLabel.setTextFill(TEXT);
 
-        HBox statusRow = new HBox(4);
-        statusRow.setAlignment(Pos.CENTER_LEFT);
-        statusRow.getChildren().addAll(statusLabel, dotsLabel);
+        stepLabel = new Label("初始化运行环境");
+        stepLabel.setFont(Font.font("Microsoft YaHei UI", FontWeight.NORMAL, 11));
+        stepLabel.setTextFill(DIM);
 
-        Label versionLabel = new Label("v-0.8.9");
-        versionLabel.setFont(Font.font("Segoe UI", FontWeight.NORMAL, 13));
-        versionLabel.setTextFill(Color.rgb(110, 110, 110));
+        counterLabel = new Label("阶段 0 / " + TOTAL_STAGES);
+        counterLabel.setFont(Font.font("Consolas", FontWeight.NORMAL, 10));
+        counterLabel.setTextFill(DIM);
 
-        HBox bottomRow = new HBox();
-        bottomRow.setAlignment(Pos.CENTER_LEFT);
-        bottomRow.getChildren().addAll(statusRow, spacer(), versionLabel);
+        Region labelSpacer = new Region();
+        HBox.setHgrow(labelSpacer, Priority.ALWAYS);
+        HBox labelRow = new HBox(8, stageLabel, labelSpacer, counterLabel);
+        labelRow.setAlignment(Pos.CENTER_LEFT);
 
-        Label copyrightLabel = new Label("©2026  本软件著作权归张浩天所有。未经作者事先书面授权，任何个人或组织不得使用、复制、修改或分发本软件，不得将其用于商业用途，亦不得将其作为任何公开展示的组成部分。");
-        copyrightLabel.setFont(Font.font("Microsoft YaHei", FontWeight.NORMAL, 11));
-        copyrightLabel.setTextFill(Color.rgb(80, 80, 80));
-        copyrightLabel.setWrapText(true);
-        copyrightLabel.setMaxWidth(540);
+        // 自定义细进度条：4px 轨道 + 强调色填充 + 末端光点
+        Pane barPane = new Pane();
+        barPane.setPrefHeight(8);
+        barPane.setMinHeight(8);
 
-        VBox bottomBox = new VBox(4);
-        bottomBox.setPadding(new Insets(0, 36, 28, 52));
-        bottomBox.getChildren().addAll(bottomRow, copyrightLabel);
+        Rectangle track = new Rectangle();
+        track.setHeight(4);
+        track.setY(2);
+        track.setFill(TRACK);
+        track.widthProperty().bind(barPane.widthProperty());
 
-        VBox codeBox = createCodeAnimation();
+        fill = new Rectangle();
+        fill.setHeight(4);
+        fill.setY(2);
+        fill.setFill(ACCENT);
+        fill.widthProperty().bind(barPane.widthProperty().multiply(progress));
 
-        BorderPane root = new BorderPane();
-        root.setTop(topBox);
-        root.setCenter(codeBox);
-        root.setBottom(bottomBox);
-        root.setStyle("-fx-background-color: #2B2B2B;");
-        BorderPane.setAlignment(codeBox, Pos.CENTER);
-        BorderPane.setAlignment(bottomBox, Pos.BOTTOM_LEFT);
+        head = new Circle(3.5, ACCENT);
+        head.centerYProperty().set(4);
+        head.centerXProperty().bind(fill.widthProperty());
+        head.visibleProperty().bind(progress.greaterThan(0.02));
 
-        Scene scene = new Scene(root, 620, 380);
-        scene.setFill(Color.TRANSPARENT);
+        barPane.getChildren().addAll(track, fill, head);
 
+        percentLabel = new Label("0%");
+        percentLabel.setFont(Font.font("Consolas", FontWeight.BOLD, 12));
+        percentLabel.setTextFill(ACCENT);
+        percentLabel.textProperty().bind(progress.multiply(100).asString("%.0f%%"));
+
+        HBox barRow = new HBox(14, barPane, percentLabel);
+        barRow.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(barPane, Priority.ALWAYS);
+
+        VBox content = new VBox(10, labelRow, stepLabel, barRow);
+        content.setAlignment(Pos.CENTER_LEFT);
+
+        VBox root = new VBox(header, content);
+        root.setPadding(new Insets(30, 34, 30, 34));
+        root.setStyle("-fx-background-color: #0B0E11; -fx-border-color: #222B32; -fx-border-width: 1;");
+        root.setPrefSize(540, 228);
+
+        Scene scene = new Scene(root);
         stage.setScene(scene);
-        stage.setAlwaysOnTop(true);
+        stage.centerOnScreen();
+
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(240), root);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        fadeIn.play();
+
         stage.show();
-
-        startDotsAnimation();
-        startTypingAnimation();
-        centerStage(stage);
-    }
-
-    private HBox spacer() {
-        HBox spacer = new HBox();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        return spacer;
-    }
-
-    private void startDotsAnimation() {
-        dotsTimeline = new Timeline(
-                new KeyFrame(Duration.millis(400), e -> {
-                    dotCount = (dotCount + 1) % 4;
-                    dotsLabel.setText(".".repeat(dotCount));
-                })
-        );
-        dotsTimeline.setCycleCount(Timeline.INDEFINITE);
-        dotsTimeline.play();
-    }
-
-    private VBox createCodeAnimation() {
-        codeLabel = new Label();
-        codeLabel.setFont(Font.font("Consolas", FontWeight.NORMAL, 14));
-        codeLabel.setTextFill(Color.rgb(106, 135, 89));
-        codeLabel.setStyle("-fx-background-color: #1E1E1E; -fx-padding: 18 24 18 24;");
-        codeLabel.setMinHeight(145);
-        codeLabel.setMaxWidth(460);
-
-        cursorLabel = new Label("|");
-        cursorLabel.setFont(Font.font("Consolas", FontWeight.NORMAL, 14));
-        cursorLabel.setTextFill(Color.rgb(106, 135, 89));
-
-        HBox codeRow = new HBox(2);
-        codeRow.setAlignment(Pos.TOP_LEFT);
-        codeRow.getChildren().addAll(codeLabel, cursorLabel);
-
-        VBox box = new VBox(8);
-        box.setAlignment(Pos.CENTER);
-        box.setPadding(new Insets(10, 52, 10, 52));
-        box.getChildren().add(codeRow);
-
-        return box;
-    }
-
-    private void startTypingAnimation() {
-        typingTimeline = new Timeline(
-                new KeyFrame(Duration.millis(30), e -> {
-                    if (charIndex < CODE_TEXT.length()) {
-                        charIndex++;
-                        codeLabel.setText(CODE_TEXT.substring(0, charIndex));
-                    } else {
-                        typingTimeline.stop();
-                        Timeline restartDelay = new Timeline(
-                                new KeyFrame(Duration.seconds(1.5), ev -> {
-                                    charIndex = 0;
-                                    codeLabel.setText("");
-                                    startTypingAnimation();
-                                })
-                        );
-                        restartDelay.setCycleCount(1);
-                        restartDelay.play();
-                    }
-                })
-        );
-        typingTimeline.setCycleCount(Timeline.INDEFINITE);
-        typingTimeline.play();
-
-        cursorTimeline = new Timeline(
-                new KeyFrame(Duration.millis(530), e -> {
-                    cursorLabel.setVisible(!cursorLabel.isVisible());
-                })
-        );
-        cursorTimeline.setCycleCount(Timeline.INDEFINITE);
-        cursorTimeline.play();
-    }
-
-    private void stopCodeAnimation() {
-        if (typingTimeline != null) {
-            typingTimeline.stop();
-        }
-        if (cursorTimeline != null) {
-            cursorTimeline.stop();
-        }
+        Platform.runLater(stage::centerOnScreen);
     }
 
     @Override
     public void handleApplicationNotification(PreloaderNotification info) {
-        if (info instanceof StageNotification sn) {
-            statusLabel.setText(sn.getMessage());
-            dotCount = 0;
-            dotsLabel.setText("");
+        if (!(info instanceof StageNotification notification)) {
+            return;
+        }
+        String message = notification.getMessage();
+        stageIndex++;
+        stageLabel.setText("正在启动");
+        stepLabel.setText(message);
+        counterLabel.setText("阶段 " + Math.min(stageIndex, TOTAL_STAGES)
+                + " / " + TOTAL_STAGES);
+        targetProgress = Math.min(0.98, stageIndex / (double) TOTAL_STAGES);
+        animateTo(targetProgress);
+
+        if (message.contains("完成")) {
+            targetProgress = 1.0;
+            animateTo(1.0);
+            fadeOutAndHide();
         }
     }
 
     @Override
     public void handleStateChangeNotification(StateChangeNotification info) {
         if (info.getType() == StateChangeNotification.Type.BEFORE_START) {
-            if (dotsTimeline != null) {
-                dotsTimeline.stop();
-            }
-            stopCodeAnimation();
-            statusLabel.setText("准备就绪");
-            dotsLabel.setText("");
-
-            FadeTransition ft = new FadeTransition(Duration.millis(500), stage.getScene().getRoot());
-            ft.setFromValue(1.0);
-            ft.setToValue(0.0);
-            ft.setOnFinished(e -> stage.hide());
-            ft.play();
+            fadeOutAndHide();
         }
     }
 
-    private void centerStage(Stage stage) {
-        stage.showingProperty().addListener((obs, wasShowing, isShowing) -> {
-            if (isShowing) {
-                javafx.application.Platform.runLater(stage::centerOnScreen);
-            }
-        });
+    private void animateTo(double target) {
+        if (progressAnim != null) {
+            progressAnim.stop();
+        }
+        progressAnim = new Timeline(new KeyFrame(
+                Duration.millis(480),
+                new KeyValue(progress, target, Interpolator.EASE_BOTH)));
+        progressAnim.play();
+    }
+
+    private void fadeOutAndHide() {
+        if (stage == null || !stage.isShowing()) {
+            return;
+        }
+        FadeTransition fade = new FadeTransition(Duration.millis(360), stage.getScene().getRoot());
+        fade.setFromValue(1.0);
+        fade.setToValue(0.0);
+        fade.setOnFinished(event -> stage.hide());
+        fade.play();
     }
 
     public static class StageNotification implements PreloaderNotification {

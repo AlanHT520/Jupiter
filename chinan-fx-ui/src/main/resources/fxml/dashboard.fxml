@@ -10,55 +10,63 @@
             fx:controller="net.alan.jupiter.fx.controller.DashboardController"
             styleClass="root">
 
-    <VBox spacing="22">
-        <padding><Insets top="26" right="28" bottom="28" left="28"/></padding>
+    <VBox spacing="18">
+        <padding><Insets top="18" right="18" bottom="18" left="18"/></padding>
 
-        <HBox spacing="16">
+        <HBox spacing="12">
             <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
-                <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Label text="🏢" styleClass="stat-icon"/>
-                    <VBox spacing="2">
-                        <Label text="宿舍楼栋" styleClass="stat-label"/>
-                        <Label fx:id="buildingCountLabel" text="--" styleClass="stat-value"/>
-                    </VBox>
-                </HBox>
+                <Label text="楼栋总数" styleClass="stat-label"/>
+                <Label fx:id="buildingCountLabel" text="--" styleClass="stat-value"/>
+                <Label text="宿舍楼栋" styleClass="caption"/>
             </VBox>
             <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
-                <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Label text="🏠" styleClass="stat-icon"/>
-                    <VBox spacing="2">
-                        <Label text="房间总数" styleClass="stat-label"/>
-                        <Label fx:id="roomCountLabel" text="--" styleClass="stat-value"/>
-                    </VBox>
-                </HBox>
+                <Label text="房间总数" styleClass="stat-label"/>
+                <Label fx:id="roomCountLabel" text="--" styleClass="stat-value"/>
+                <Label text="房间总数" styleClass="caption"/>
             </VBox>
             <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
-                <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Label text="🎓" styleClass="stat-icon"/>
-                    <VBox spacing="2">
-                        <Label text="学生人数" styleClass="stat-label"/>
-                        <Label fx:id="studentCountLabel" text="--" styleClass="stat-value"/>
-                    </VBox>
-                </HBox>
+                <Label text="学生人数" styleClass="stat-label"/>
+                <Label fx:id="studentCountLabel" text="--" styleClass="stat-value"/>
+                <Label text="学生人数" styleClass="caption"/>
             </VBox>
             <VBox styleClass="stat-card" HBox.hgrow="ALWAYS">
-                <HBox spacing="12" alignment="CENTER_LEFT">
-                    <Label text="⏳" styleClass="stat-icon"/>
-                    <VBox spacing="2">
-                        <Label text="进行中任务" styleClass="stat-label"/>
-                        <Label fx:id="activeTaskLabel" text="--" styleClass="stat-value"/>
-                    </VBox>
-                </HBox>
+                <Label text="进行中任务" styleClass="stat-label"/>
+                <Label fx:id="activeTaskLabel" text="--" styleClass="stat-value"/>
+                <Label text="进行中任务" styleClass="caption"/>
             </VBox>
         </HBox>
 
-        <VBox spacing="12">
-            <HBox alignment="CENTER_LEFT">
-                <Label text="近期任务" styleClass="section-title"/>
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+                <Label text="实时数据" styleClass="section-label"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Label text="按创建时间倒序" styleClass="caption"/>
+                <Label fx:id="liveUpdatedLabel" text="等待事件" styleClass="caption"/>
             </HBox>
-            <VBox fx:id="recentTaskBox" spacing="8"/>
+            <HBox spacing="28" styleClass="card">
+                <VBox spacing="2"><Label text="应到" styleClass="stat-label"/><Label fx:id="liveShouldLabel" text="0" styleClass="stat-value"/></VBox>
+                <VBox spacing="2"><Label text="实到" styleClass="stat-label"/><Label fx:id="liveActualLabel" text="0" styleClass="stat-value"/></VBox>
+                <VBox spacing="2"><Label text="请假" styleClass="stat-label"/><Label fx:id="liveLeaveLabel" text="0" styleClass="stat-value"/></VBox>
+                <VBox spacing="2"><Label text="旷宿" styleClass="stat-label"/><Label fx:id="liveAbsentLabel" text="0" styleClass="stat-value"/></VBox>
+                <VBox spacing="2"><Label text="完成率" styleClass="stat-label"/><Label fx:id="liveRateLabel" text="0.0%" styleClass="stat-value"/></VBox>
+            </HBox>
+        </VBox>
+
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+                <Label text="事件流" styleClass="section-label"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="手机提交 → 电脑数字当场跳" styleClass="caption"/>
+            </HBox>
+            <VBox fx:id="liveEventBox" spacing="0"/>
+        </VBox>
+
+        <VBox spacing="0">
+            <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+                <Label text="近期任务" styleClass="section-label"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Label text="按创建时间倒序 · 最近 5 条" styleClass="caption"/>
+            </HBox>
+            <VBox fx:id="recentTaskBox" spacing="0"/>
         </VBox>
     </VBox>
 </ScrollPane>

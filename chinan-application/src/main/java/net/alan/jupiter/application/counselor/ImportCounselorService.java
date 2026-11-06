@@ -30,21 +30,21 @@ import java.util.stream.Collectors;
 public class ImportCounselorService {
 
     private static final List<String> TEMPLATE_HEADERS = List.of(
-            "班级", "姓名", "性别", "学号", "手机号", "密码", "部门"
+            "姓名", "性别", "手机号", "密码", "部门", "学号", "班级"
     );
 
     private static final List<String> SAMPLE_ROW = List.of(
-            "机车2602", "张浩天", "男", "2602531414", "15226511870", "1234", "权益部"
+            "张浩天", "男", "15226511870", "123456", "权益部", "2602531414", "机车2602"
     );
 
     private static final List<List<String>> INSTRUCTION_ROWS = List.of(
-            List.of("班级", "必填", "文本", "机车2602", "学生所属班级"),
             List.of("姓名", "必填", "文本", "张浩天", ""),
-            List.of("性别", "必填", "文本", "男", "男 / 女"),
-            List.of("学号", "必填", "文本", "2602531414", "登录账户，唯一标识，必须为文本格式"),
-            List.of("手机号", "必填", "文本", "15226511870", "11 位数字"),
-            List.of("密码", "必填", "文本", "1234", "初始登录密码，查宿者后续可自行修改"),
-            List.of("部门", "选填", "文本", "权益部", "学生会部门，如权益部、宿管部")
+            List.of("性别", "选填", "文本", "男", "男 / 女"),
+            List.of("手机号", "必填", "文本", "15226511870", "11 位数字，同时作为登录账号"),
+            List.of("密码", "选填", "文本", "123456", "至少 6 位；留空则默认用手机号作为初始密码"),
+            List.of("部门", "必填", "文本", "权益部", "如权益部、宿管部、学生会"),
+            List.of("学号", "选填", "文本", "2602531414", "仅作档案，不再作为登录账号"),
+            List.of("班级", "选填", "文本", "机车2602", "仅作档案")
     );
 
     private final CounselorRepository counselorRepository;
@@ -58,10 +58,7 @@ public class ImportCounselorService {
             for (int i = 0; i < TEMPLATE_HEADERS.size(); i++) {
                 headerRow.createCell(i).setCellValue(TEMPLATE_HEADERS.get(i));
             }
-            Row sampleRow = importSheet.createRow(1);
-            for (int i = 0; i < SAMPLE_ROW.size(); i++) {
-                sampleRow.createCell(i).setCellValue(SAMPLE_ROW.get(i));
-            }
+            // 不再预置示例人员，避免示例姓名/手机号与真实名单冲突被误导入或误过滤
             autoSizeSheet(importSheet, TEMPLATE_HEADERS.size());
 
             Sheet instructionSheet = workbook.createSheet("填写说明");
@@ -116,18 +113,20 @@ public class ImportCounselorService {
         ImportResult result = new ImportResult();
         List<Counselor> toSave = new ArrayList<>();
 
-        Set<String> newStudentNos = rows.stream()
-                .map(CounselorImportRow::getStudentNo)
+        Set<String> newPhones = rows.stream()
+                .map(CounselorImportRow::getPhone)
                 .filter(s -> s != null && !s.isBlank())
                 .collect(Collectors.toSet());
 
         List<Counselor> existingNonAdmins = counselorRepository
                 .findByIsActiveTrueAndRoleIgnoreCase("COUNSELOR");
         for (Counselor c : existingNonAdmins) {
-            if (c.getStudentNo() != null && !newStudentNos.contains(c.getStudentNo())) {
+            if (c.getPhone() != null && !newPhones.contains(c.getPhone())) {
+                // 名单里没有 ≠ 删除账号：改为停用，保留历史查寝记录与任务归属
                 taskRepository.clearCounselorReference(c.getId());
-                counselorRepository.delete(c);
-                result.addDeleted(c.getStudentNo());
+                c.setIsActive(false);
+                counselorRepository.save(c);
+                result.addDisabled(c.getPhone());
             }
         }
         if (result.getDeleted() > 0) {
@@ -135,18 +134,20 @@ public class ImportCounselorService {
         }
 
         for (CounselorImportRow row : rows) {
-            if (row.getStudentNo() == null || row.getStudentNo().isBlank()) {
-                result.addError("学号为空");
+            if (row.getPhone() == null || !row.getPhone().matches("\\d{11}")) {
+                result.addError("手机号为空或不是 11 位数字");
                 continue;
             }
             if (row.getPassword() == null || row.getPassword().isBlank()) {
-                result.addError(String.format("学号 %s 密码为空", row.getStudentNo()));
-                continue;
+                // 密码列可留空：用手机号作为初始密码，导入后提示管理员
+                row.setPassword(row.getPhone());
+                result.addError(String.format(
+                        "提示：手机号 %s 未填写密码，已使用手机号作为初始密码", row.getPhone()));
             }
 
-            Counselor existing = counselorRepository.findByStudentNo(row.getStudentNo()).orElse(null);
+            Counselor existing = counselorRepository.findByPhone(row.getPhone()).orElse(null);
             if (existing != null) {
-                existing.setUsername(row.getStudentNo());
+                existing.setUsername(row.getPhone());
                 existing.setName(row.getName());
                 existing.setGender(row.getGender());
                 existing.setClassName(row.getClassName());
@@ -155,12 +156,13 @@ public class ImportCounselorService {
                 if (!passwordEncoder.matches(row.getPassword(), existing.getPassword())) {
                     existing.setPassword(passwordEncoder.encode(row.getPassword()));
                 }
+                existing.setPasswordPlain(row.getPassword());
                 existing.setIsActive(true);
                 toSave.add(existing);
-                result.addUpdated(row.getStudentNo());
+                result.addUpdated(row.getPhone());
             } else {
                 toSave.add(buildNew(row));
-                result.addImported(row.getStudentNo());
+                result.addImported(row.getPhone());
             }
         }
 
@@ -173,7 +175,7 @@ public class ImportCounselorService {
 
     private Counselor buildNew(CounselorImportRow row) {
         return Counselor.builder()
-                .username(row.getStudentNo())
+                .username(row.getPhone())
                 .name(row.getName())
                 .gender(row.getGender())
                 .studentNo(row.getStudentNo())
@@ -181,6 +183,7 @@ public class ImportCounselorService {
                 .phone(row.getPhone())
                 .department(row.getDepartment())
                 .password(passwordEncoder.encode(row.getPassword()))
+                .passwordPlain(row.getPassword())
                 .role("COUNSELOR")
                 .isActive(true)
                 .build();
@@ -200,7 +203,8 @@ public class ImportCounselorService {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 String studentNo = getCellString(row, idx.studentNo);
-                if (studentNo == null || studentNo.isBlank()) continue;
+                String phone = getCellString(row, idx.phone);
+                if (phone == null || phone.isBlank()) continue;
 
                 rows.add(CounselorImportRow.builder()
                         .studentNo(studentNo)
@@ -228,24 +232,26 @@ public class ImportCounselorService {
             for (int colNum = 0; colNum <= row.getLastCellNum(); colNum++) {
                 String header = getCellString(row, colNum);
                 if (header == null) continue;
-                switch (header) {
-                    case "学号" -> idx.studentNo = colNum;
-                    case "姓名" -> idx.name = colNum;
+                String key = header.replace("*", "").replace(" ", "").trim();
+                switch (key) {
+                    case "学号", "工号" -> idx.studentNo = colNum;
+                    case "姓名", "名字" -> idx.name = colNum;
                     case "性别" -> idx.gender = colNum;
-                    case "班级" -> idx.className = colNum;
-                    case "手机号" -> idx.phone = colNum;
-                    case "密码" -> idx.password = colNum;
-                    case "部门" -> idx.department = colNum;
+                    case "班级", "班级名称" -> idx.className = colNum;
+                    case "手机号", "手机号码", "电话", "联系电话" -> idx.phone = colNum;
+                    case "密码", "初始密码" -> idx.password = colNum;
+                    case "部门", "所属部门" -> idx.department = colNum;
                 }
             }
-            if (idx.studentNo >= 0 && idx.name >= 0) {
+            // 新规则：手机号是登录账号，学号改为选填
+            if (idx.phone >= 0 && idx.name >= 0) {
                 idx.headerRow = rowNum;
                 return idx;
             }
         }
 
         throw new BizException(ErrorCode.EXCEL_FORMAT_ERROR,
-                "未找到表头行，请确保 Excel 包含「学号」和「姓名」列");
+                "未找到表头行，请确保 Excel 包含「手机号」和「姓名」列");
     }
 
     private String getCellString(Row row, int colIndex) {
@@ -302,16 +308,19 @@ public class ImportCounselorService {
         private int updated;
         private int skipped;
         private int deleted;
+        private int disabled;
         private final List<String> errors = new ArrayList<>();
         private final List<String> importedList = new ArrayList<>();
         private final List<String> updatedList = new ArrayList<>();
         private final List<String> skippedList = new ArrayList<>();
         private final List<String> deletedList = new ArrayList<>();
+        private final List<String> disabledList = new ArrayList<>();
 
         public void addImported(String studentNo) { imported++; importedList.add(studentNo); }
         public void addUpdated(String studentNo) { updated++; updatedList.add(studentNo); }
         public void addSkipped(String studentNo) { skipped++; skippedList.add(studentNo); }
         public void addDeleted(String studentNo) { deleted++; deletedList.add(studentNo); }
+        public void addDisabled(String studentNo) { disabled++; disabledList.add(studentNo); }
         public void addError(String msg) { errors.add(msg); }
     }
 

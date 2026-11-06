@@ -26,8 +26,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import net.alan.jupiter.ui.theme.LoginBackground
-import net.alan.jupiter.ui.theme.LoginBackgroundDark
+import net.alan.jupiter.ui.theme.QnAccent
+import net.alan.jupiter.ui.theme.QnBg
+import net.alan.jupiter.ui.theme.QnLine
+import net.alan.jupiter.ui.theme.QnPanel
+import net.alan.jupiter.ui.theme.QnText
+import net.alan.jupiter.ui.theme.QnTextDim
+import net.alan.jupiter.ui.theme.QnTextMuted
 
 @Composable
 fun LoginScreen(
@@ -52,17 +57,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    if (isDarkTheme) {
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            listOf(LoginBackgroundDark, Color(0xFF0A1120))
-                        )
-                    } else {
-                        androidx.compose.ui.graphics.Brush.verticalGradient(
-                            listOf(LoginBackground, Color(0xFF0E1B33))
-                        )
-                    }
-                )
+                .background(QnBg)
         ) {
             Box(
                 modifier = Modifier
@@ -74,49 +69,36 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Surface(
-                        modifier = Modifier.size(88.dp),
-                        shape = MaterialTheme.shapes.large,
-                        color = Color.White.copy(alpha = 0.18f),
+                        modifier = Modifier.size(72.dp),
+                        shape = MaterialTheme.shapes.small,
+                        color = QnPanel,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, QnLine),
                         tonalElevation = 0.dp
                     ) {
                         Icon(
                             Icons.Default.School,
                             contentDescription = null,
                             modifier = Modifier
-                                .padding(16.dp)
+                                .padding(14.dp)
                                 .fillMaxSize(),
-                            tint = Color.White
+                            tint = QnAccent
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Chinan",
+                        text = "寝安",
                         style = MaterialTheme.typography.displaySmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-
-                    Text(
-                        text = "Kotlin Edition",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = QnText
                     )
 
                     Text(
                         text = "宿舍查寝管理系统",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = QnTextMuted,
                         modifier = Modifier.padding(top = 6.dp)
-                    )
-
-                    Text(
-                        text = "v-0.8.9",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.White.copy(alpha = 0.35f),
-                        modifier = Modifier.padding(top = 10.dp)
                     )
                 }
             }
@@ -126,9 +108,10 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .wrapContentHeight(),
                 shape = MaterialTheme.shapes.extraLarge,
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 8.dp,
-                tonalElevation = 2.dp
+                color = QnPanel,
+                shadowElevation = 0.dp,
+                tonalElevation = 0.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, QnLine)
             ) {
                 Column(
                     modifier = Modifier
@@ -155,7 +138,7 @@ fun LoginScreen(
                     OutlinedTextField(
                         value = uiState.username,
                         onValueChange = viewModel::updateUsername,
-                        label = { Text("用户名") },
+                        label = { Text("手机号") },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Person,
@@ -218,31 +201,36 @@ fun LoginScreen(
                         enabled = !uiState.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        shape = MaterialTheme.shapes.medium,
+                            .height(48.dp),
+                        shape = MaterialTheme.shapes.small,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary
+                            containerColor = QnAccent,
+                            contentColor = QnBg
                         ),
-                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+                        elevation = null
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
-                                modifier = Modifier.size(22.dp),
+                                modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = QnBg
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("登录中...")
+                            Text("登录中...", fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
                         } else {
-                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("登录", style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                "登录",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (onRegisterClick != null && uiState.registrationEnabled) {
+                    if (onRegisterClick != null) {
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)

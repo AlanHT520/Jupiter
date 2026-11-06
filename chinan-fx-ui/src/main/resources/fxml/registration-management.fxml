@@ -7,12 +7,13 @@
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="net.alan.jupiter.fx.controller.RegistrationManagementController"
-      spacing="16"
+      spacing="12"
       styleClass="root">
 
-    <padding><Insets top="22" right="22" bottom="22" left="22"/></padding>
+    <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
 
     <VBox styleClass="card" spacing="10">
+        <Label text="REGISTRATION SWITCH" styleClass="section-label"/>
         <Label text="注册开关" styleClass="section-title"/>
         <HBox alignment="CENTER_LEFT" spacing="14">
             <Label text="允许新用户自助注册" styleClass="muted"/>
@@ -35,10 +36,11 @@
             </placeholder>
             <columns>
                 <TableColumn fx:id="colName" text="姓名" prefWidth="90"/>
-                <TableColumn fx:id="colStudentNo" text="学号" prefWidth="130"/>
-                <TableColumn fx:id="colClassName" text="班级" prefWidth="110"/>
+                <TableColumn fx:id="colStudentNo" text="性别" prefWidth="130"/>
+                <TableColumn fx:id="colClassName" text="部门" prefWidth="110"/>
                 <TableColumn fx:id="colPhone" text="手机号" prefWidth="130"/>
                 <TableColumn fx:id="colSubmittedAt" text="提交时间" prefWidth="170"/>
+                <TableColumn fx:id="colActions" text="操作" prefWidth="150"/>
             </columns>
         </TableView>
     </VBox>
@@ -51,8 +53,8 @@
             </placeholder>
             <columns>
                 <TableColumn fx:id="colHName" text="姓名" prefWidth="90"/>
-                <TableColumn fx:id="colHStudentNo" text="学号" prefWidth="130"/>
-                <TableColumn fx:id="colHClassName" text="班级" prefWidth="110"/>
+                <TableColumn fx:id="colHStudentNo" text="性别" prefWidth="130"/>
+                <TableColumn fx:id="colHClassName" text="部门" prefWidth="110"/>
                 <TableColumn fx:id="colHPhone" text="手机号" prefWidth="130"/>
                 <TableColumn fx:id="colHStatus" text="审核结果" prefWidth="100"/>
                 <TableColumn fx:id="colHSubmittedAt" text="提交时间" prefWidth="170"/>

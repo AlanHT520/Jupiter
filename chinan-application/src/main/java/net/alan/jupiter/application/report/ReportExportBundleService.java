@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -51,17 +52,16 @@ public class ReportExportBundleService {
     public ExportResult exportBundle(String taskId, String outputDir) throws IOException {
         boolean allTasks = (taskId == null || taskId.isBlank());
         String dateStr = allTasks
-                ? LocalDateTime.now().format(DT_FMT)
+                ? LocalDate.now().toString()
                 : resolveSingleTaskDate(taskId);
+        // 保留原有导出目录结构，只去掉时间后缀（不再出现 _HHmmss 一串数字）
         Path dir = Path.of(outputDir, "晚查寝_" + dateStr);
-
         Files.createDirectories(dir);
 
         List<DormBuilding> buildings = buildingRepository.findByIsActiveTrue();
         List<String> failedBuildings = new ArrayList<>();
         List<String> failedClasses = new ArrayList<>();
 
-        // P0#1: 全量导出时，一次加载所有记录，后续共享
         ReportQueryService.ExportContext ctx = null;
         if (allTasks) {
             ctx = reportQueryService.prepareExportContext();
@@ -70,7 +70,7 @@ public class ReportExportBundleService {
         Path buildingDir = dir.resolve("楼栋报表");
         Path classDir = dir.resolve("班级报表");
         Path proofDir = dir.resolve(ProofPathResolver.PROOF_ROOT)
-                           .resolve(ProofPathResolver.BUILDING_SUB);
+                .resolve(ProofPathResolver.BUILDING_SUB);
         Files.createDirectories(proofDir);
 
         List<ExcelExportHelper.BuildingSummaryData> summaryDataList = new ArrayList<>();
@@ -101,10 +101,21 @@ public class ReportExportBundleService {
                     htmlContent.toString().getBytes(StandardCharsets.UTF_8));
         }
 
-        // 学院级导出：晚查寝数据汇总 + 请假明细
-        Map<String, CheckRecord> collegeRecordMap = getRecordMap(taskId, allTasks, ctx);
-        if (collegeRecordMap != null) {
-            writeCollegeLevelReports(dir, dateStr, collegeRecordMap, allTasks);
+        // 只替换「汇总」和「请假明细」两份文件：全量口径、不带学院名、不带时间后缀
+        Map<String, CheckRecord> recordMap = getRecordMap(taskId, allTasks, ctx);
+        if (recordMap != null) {
+            NightCheckSummaryData summary =
+                    reportQueryService.buildNightCheckSummary("", recordMap, dateStr);
+            if (!summary.getBuildingRows().isEmpty()) {
+                Files.write(dir.resolve("晚查寝数据汇总.xlsx"),
+                        excelExportHelper.exportNightCheckSummary(summary));
+            }
+            LeaveDetailData leaveDetail =
+                    reportQueryService.buildLeaveDetail("", recordMap, dateStr);
+            if (!leaveDetail.getRows().isEmpty()) {
+                Files.write(dir.resolve("请假明细.xlsx"),
+                        excelExportHelper.exportLeaveDetail(leaveDetail, null));
+            }
         }
 
         log.info("导出报表文件夹: {} (楼栋:{}个成功/{}个失败, 班级:{}个失败)",

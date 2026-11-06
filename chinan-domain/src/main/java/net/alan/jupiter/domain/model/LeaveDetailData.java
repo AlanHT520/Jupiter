@@ -76,8 +76,14 @@ public class LeaveDetailData {
     @AllArgsConstructor
     public static class LeaveDetailItem {
         private String studentName;
+        private String studentNo;
         private CheckStatus status;
         private String gender;
+        private String phone;
+        private String startDate;
+        private String endDate;
+        private Integer days;
         private String proofFile;
+        private String remark;
     }
 }

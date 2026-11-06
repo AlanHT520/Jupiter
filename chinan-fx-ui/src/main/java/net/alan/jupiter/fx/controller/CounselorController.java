@@ -169,6 +169,12 @@ public class CounselorController {
             return;
         }
 
+        if (!DialogUtils.showConfirm("导出明文密码？",
+                "表格会包含每个工作人员的「明文密码」，请仅在可信环境使用。\n"
+                        + "早期只存了哈希的旧账号无法还原，会在该列标注提示，需要重置后才会显示。\n\n确定继续？")) {
+            return;
+        }
+
         FxUtils.runAsync(
                 () -> {
                     try {
@@ -179,7 +185,8 @@ public class CounselorController {
                     }
                     return file.getAbsolutePath();
                 },
-                path -> DialogUtils.showInfo("导出成功", "已导出到:\n" + path),
+                path -> DialogUtils.showInfo("导出成功",
+                        "已导出到:\n" + path + "\n\n工作人员密码已重置，请把「初始密码」列发给本人。"),
                 ex -> {
                     log.error("导出工作人员账户失败", ex);
                     DialogUtils.showError("导出失败", "导出工作人员账户失败，请稍后再试");

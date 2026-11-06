@@ -1,176 +1,236 @@
 /* ============================================================
-   Chinan — Desktop Design System (dark)
-   Tokens: bg #0F1218 / surface #161B24 / surface-2 #1C2330
-           border #273141 / text #E8EDF5 / muted #A6B0C0 / faint #6F7B8F
-           accent #4C8DFF / success #3DD68C / warning #F2C55C / danger #F06B6B
+   寝安 QIN'AN — Desktop Geek Design System (dark only)
+   底 #0B0E11 / 面板 #11161B / 细线 #222B32 / 文字 #E6EDF0
+   唯一强调色 #3DDC97 / 危险 #FF5C5C / 警告 #FFC857
+   规则：圆角 ≤2px、无阴影、无渐变、数字与状态等宽
    ============================================================ */
 
 .root {
-    -fx-font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    -fx-font-family: "Microsoft YaHei UI", "Noto Sans SC", "PingFang SC", "Segoe UI", sans-serif;
     -fx-font-size: 13px;
-    -fx-background-color: #0F1218;
-    -fx-text-fill: #E8EDF5;
+    -fx-background-color: #0B0E11;
+    -fx-text-fill: #E6EDF0;
 }
 
-.root-layout {
-    -fx-background-color: #0F1218;
-}
-
+.root-layout,
 .app-content {
-    -fx-background-color: #0F1218;
+    -fx-background-color: #0B0E11;
 }
 
-/* ===================== SIDEBAR ===================== */
-.sidebar {
-    -fx-background-color: #12171F;
-    -fx-border-color: transparent #232C3A transparent transparent;
-    -fx-border-width: 0 1 0 0;
-    -fx-padding: 18 12 14 12;
-    -fx-spacing: 4;
-    -fx-min-width: 216;
-    -fx-pref-width: 216;
-}
-
-.brand-block {
-    -fx-padding: 6 10 18 10;
-    -fx-spacing: 2;
-}
-
-.brand-title {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 21px;
-    -fx-font-weight: bold;
-}
-
-.brand-sub {
-    -fx-text-fill: #5E6B80;
-    -fx-font-size: 10.5px;
-}
-
-.nav-section-label {
-    -fx-text-fill: #55627A;
-    -fx-font-size: 10.5px;
-    -fx-font-weight: bold;
-    -fx-padding: 10 10 4 10;
-}
-
+/* 等宽：数字、路径、状态标签统一走这里 */
+.mono,
+.stat-value,
+.badge,
+.path-label,
+.conn-text,
+.clock-label,
+.status-bar,
+.status-bar-shell,
+.log-viewer .content,
+.table-view .table-cell,
 .nav-button {
-    -fx-background-color: transparent;
-    -fx-background-radius: 8;
-    -fx-text-fill: #A6B0C0;
-    -fx-font-size: 13px;
-    -fx-alignment: CENTER_LEFT;
-    -fx-padding: 9 12;
-    -fx-graphic-text-gap: 10;
-    -fx-cursor: hand;
-    -fx-border-width: 0 0 0 3;
-    -fx-border-color: transparent;
+    -fx-font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", "Microsoft YaHei UI", monospace;
 }
 
-.nav-button:hover {
-    -fx-background-color: #1A2230;
-    -fx-text-fill: #E8EDF5;
-}
-
-.nav-button:selected {
-    -fx-background-color: rgba(76, 141, 255, 0.14);
-    -fx-text-fill: #FFFFFF;
-    -fx-border-color: transparent transparent transparent #4C8DFF;
-    -fx-font-weight: bold;
-}
-
-.nav-button:focused {
-    -fx-border-color: transparent transparent transparent #4C8DFF;
-}
-
-.nav-icon {
-    -fx-icon-color: #8E9BAF;
-    -fx-icon-size: 14;
-}
-
-.nav-button:hover .nav-icon {
-    -fx-icon-color: #DCE4F0;
-}
-
-.nav-button:selected .nav-icon {
-    -fx-icon-color: #FFFFFF;
-}
-
-.sidebar-spacer {
-    -fx-padding: 0;
-}
-
-.sidebar-footer {
-    -fx-border-color: #232C3A transparent transparent transparent;
-    -fx-border-width: 1 0 0 0;
-    -fx-padding: 12 10 2 10;
-    -fx-spacing: 2;
-}
-
-.sidebar-footer-title {
-    -fx-text-fill: #7C889C;
+.machine {
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-text-fill: #3DDC97;
     -fx-font-size: 11.5px;
 }
 
-.sidebar-footer-sub {
-    -fx-text-fill: #4E5A6E;
-    -fx-font-size: 10.5px;
-}
-
-/* ===================== HEADER ===================== */
-.header-bar {
-    -fx-background-color: #161B24;
-    -fx-border-color: transparent transparent #232C3A transparent;
+/* ===================== 顶部壳 ===================== */
+.top-bar {
+    -fx-background-color: #0E1418;
+    -fx-border-color: transparent transparent #222B32 transparent;
     -fx-border-width: 0 0 1 0;
-    -fx-padding: 12 22;
-    -fx-spacing: 14;
+    -fx-padding: 0 14 0 0;
+    -fx-min-height: 44;
+    -fx-pref-height: 44;
+    -fx-spacing: 16;
     -fx-alignment: CENTER_LEFT;
 }
 
-.header-title {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 17px;
-    -fx-font-weight: bold;
-}
-
-.header-subtitle {
-    -fx-text-fill: #6F7B8F;
-    -fx-font-size: 12px;
-}
-
-.user-chip {
-    -fx-background-color: #1B2432;
-    -fx-background-radius: 999;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 999;
-    -fx-padding: 5 12 5 6;
+.brand-mark {
+    -fx-background-color: #11161B;
+    -fx-border-color: transparent #222B32 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 0 16;
+    -fx-min-width: 200;
+    -fx-pref-width: 200;
     -fx-spacing: 8;
     -fx-alignment: CENTER_LEFT;
 }
 
-.avatar-circle {
-    -fx-background-color: #4C8DFF;
-    -fx-background-radius: 999;
-    -fx-min-width: 22;
-    -fx-min-height: 22;
-    -fx-max-width: 22;
-    -fx-max-height: 22;
-    -fx-alignment: CENTER;
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 11px;
+.brand-name {
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
 }
 
-.user-chip-name {
-    -fx-text-fill: #C9D3E3;
+.brand-ver {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.path-label {
+    -fx-text-fill: #3DDC97;
     -fx-font-size: 12px;
 }
 
-/* ===================== MENU ===================== */
-.menu-bar-container {
-    -fx-background-color: transparent;
+.shell-right {
+    -fx-spacing: 14;
+    -fx-alignment: CENTER_RIGHT;
 }
 
+.conn-dot {
+    -fx-text-fill: #3DDC97;
+    -fx-font-size: 13px;
+}
+
+.conn-dot.offline {
+    -fx-text-fill: #FF5C5C;
+}
+
+.conn-text {
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 11px;
+}
+
+.clock-label {
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 11px;
+}
+
+/* 底部状态栏 */
+.status-bar-shell {
+    -fx-background-color: #0E1418;
+    -fx-border-color: #222B32 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 5 14;
+    -fx-spacing: 18;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.status-left,
+.status-right {
+    -fx-spacing: 16;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.status-item {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 11px;
+}
+
+.status-item-strong {
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 11px;
+}
+
+.status-sep {
+    -fx-text-fill: #222B32;
+    -fx-font-size: 11px;
+}
+
+.status-accent {
+    -fx-text-fill: #3DDC97;
+    -fx-font-size: 11px;
+}
+
+/* ===================== 侧栏 ===================== */
+.sidebar {
+    -fx-background-color: #0E1418;
+    -fx-border-color: transparent #222B32 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 12 0 10 0;
+    -fx-spacing: 0;
+    -fx-min-width: 200;
+    -fx-pref-width: 200;
+}
+
+.brand-block {
+    -fx-padding: 4 16 14 16;
+    -fx-spacing: 3;
+}
+
+.brand-title {
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+}
+
+.brand-sub {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.nav-section-label {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-padding: 14 16 5 16;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 12.5px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 8 16;
+    -fx-graphic-text-gap: 8;
+    -fx-cursor: hand;
+    -fx-border-width: 0 0 0 2;
+    -fx-border-color: transparent;
+}
+
+.nav-button:hover {
+    -fx-background-color: #11161B;
+    -fx-text-fill: #E6EDF0;
+}
+
+.nav-button:selected {
+    -fx-background-color: #11161B;
+    -fx-text-fill: #E6EDF0;
+    -fx-border-color: #3DDC97 transparent transparent transparent;
+    -fx-border-width: 0 0 0 2;
+}
+
+.nav-button:focused {
+    -fx-border-color: #3DDC97 transparent transparent transparent;
+}
+
+.nav-icon {
+    -fx-icon-color: #5A666E;
+}
+
+.nav-button:hover .nav-icon,
+.nav-button:selected .nav-icon {
+    -fx-icon-color: #3DDC97;
+}
+
+.sidebar-footer {
+    -fx-padding: 12 16 2 16;
+    -fx-spacing: 2;
+    -fx-border-color: #222B32 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.sidebar-footer-title {
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 11.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.sidebar-footer-sub {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+/* ===================== 菜单栏（扁平化） ===================== */
 .app-menu-bar {
     -fx-background-color: transparent;
     -fx-padding: 0;
@@ -178,320 +238,380 @@
 
 .app-menu-bar > .container > .menu-button {
     -fx-background-color: transparent;
-    -fx-padding: 4 10;
-    -fx-background-radius: 6;
+    -fx-background-radius: 0;
+    -fx-padding: 4 8;
 }
 
 .app-menu-bar > .container > .menu-button > .label {
-    -fx-text-fill: #A6B0C0;
-    -fx-font-size: 12.5px;
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 12px;
 }
 
 .app-menu-bar > .container > .menu-button:hover,
 .app-menu-bar > .container > .menu-button:focused,
 .app-menu-bar > .container > .menu-button:showing {
-    -fx-background-color: #1D2634;
+    -fx-background-color: #11161B;
 }
 
 .app-menu-bar > .container > .menu-button:hover > .label,
 .app-menu-bar > .container > .menu-button:focused > .label,
 .app-menu-bar > .container > .menu-button:showing > .label {
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: #E6EDF0;
 }
 
 .context-menu {
-    -fx-background-color: #1A2230;
-    -fx-border-color: #2A3546;
+    -fx-background-color: #11161B;
+    -fx-border-color: #222B32;
     -fx-border-width: 1;
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
-    -fx-padding: 5 0;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 16, 0.15, 0, 6);
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 4 0;
+    -fx-effect: null;
 }
 
 .menu-item {
     -fx-background-color: transparent;
-    -fx-padding: 6 18;
+    -fx-padding: 6 16;
 }
 
 .menu-item > .label {
-    -fx-text-fill: #B9C4D4;
+    -fx-text-fill: #B9C3CB;
     -fx-font-size: 12.5px;
 }
 
 .menu-item:focused {
-    -fx-background-color: rgba(76, 141, 255, 0.16);
+    -fx-background-color: #1A2228;
 }
 
 .menu-item:focused > .label {
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: #E6EDF0;
 }
 
-/* ===================== PAGE / SECTIONS ===================== */
+/* ===================== 页面骨架 ===================== */
+.header-bar {
+    -fx-background-color: #0B0E11;
+    -fx-border-color: transparent transparent #222B32 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 12 18;
+    -fx-spacing: 14;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.header-title {
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+
+.header-subtitle {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 11.5px;
+}
+
+.user-chip {
+    -fx-spacing: 8;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-padding: 3 6;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+}
+
+.avatar-circle {
+    -fx-background-color: rgba(61, 220, 151, 0.12);
+    -fx-background-radius: 2;
+    -fx-border-color: #3DDC97;
+    -fx-border-width: 1;
+    -fx-text-fill: #3DDC97;
+    -fx-font-size: 11px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+    -fx-padding: 2 6;
+}
+
+.user-chip-name {
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 11.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
 .page-title {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 19px;
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 16px;
     -fx-font-weight: bold;
 }
 
 .page-subtitle {
-    -fx-text-fill: #C4CEDD;
-    -fx-font-size: 13.5px;
-    -fx-font-weight: bold;
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 11.5px;
 }
 
 .section-title {
-    -fx-text-fill: #E8EDF5;
-    -fx-font-size: 14px;
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+}
+
+.section-label {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
 }
 
 .muted {
-    -fx-text-fill: #7C889C;
-    -fx-font-size: 12px;
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 11.5px;
 }
 
 .caption {
-    -fx-text-fill: #5E6B80;
-    -fx-font-size: 11px;
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
 }
 
-/* ===================== CARDS / STATS ===================== */
+/* ===================== 卡片 / 统计 ===================== */
 .card {
-    -fx-background-color: #161B24;
-    -fx-background-radius: 12;
-    -fx-border-color: #232C3A;
+    -fx-background-color: #11161B;
+    -fx-background-radius: 2;
+    -fx-border-color: #222B32;
     -fx-border-width: 1;
-    -fx-border-radius: 12;
-    -fx-padding: 18;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 16, 0.12, 0, 6);
+    -fx-border-radius: 2;
+    -fx-padding: 14 16;
+    -fx-effect: null;
 }
 
 .stat-card {
-    -fx-background-color: #161B24;
-    -fx-background-radius: 12;
-    -fx-border-color: #232C3A;
+    -fx-background-color: #11161B;
+    -fx-background-radius: 2;
+    -fx-border-color: #222B32;
     -fx-border-width: 1;
-    -fx-border-radius: 12;
-    -fx-padding: 16 18;
-    -fx-spacing: 6;
-    -fx-alignment: CENTER_LEFT;
-    -fx-min-width: 180;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.35), 16, 0.12, 0, 6);
+    -fx-border-radius: 2;
+    -fx-padding: 14 16;
+    -fx-spacing: 4;
+    -fx-min-width: 170;
+    -fx-effect: null;
 }
 
 .stat-card:hover {
-    -fx-border-color: #33415A;
+    -fx-border-color: #3DDC97;
 }
 
-/* 卡片内嵌表格时去掉重复的阴影与边框，避免"卡中卡" */
 .card .table-view {
     -fx-effect: null;
-    -fx-border-color: #1D2531;
+    -fx-border-color: #1A2228;
 }
 
 .stat-icon {
-    -fx-background-color: rgba(76, 141, 255, 0.14);
-    -fx-background-radius: 10;
-    -fx-min-width: 36;
-    -fx-min-height: 36;
-    -fx-max-width: 36;
-    -fx-max-height: 36;
+    -fx-background-color: rgba(61, 220, 151, 0.08);
+    -fx-background-radius: 2;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+    -fx-min-width: 30;
+    -fx-min-height: 30;
+    -fx-max-width: 30;
+    -fx-max-height: 30;
     -fx-alignment: CENTER;
-    -fx-font-size: 17px;
+    -fx-font-size: 14px;
 }
 
 .stat-label {
-    -fx-text-fill: #7C889C;
-    -fx-font-size: 12px;
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
 }
 
 .stat-value {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 26px;
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 27px;
     -fx-font-weight: bold;
 }
 
 .building-card {
-    -fx-background-color: #161B24;
-    -fx-background-radius: 12;
-    -fx-border-color: #232C3A;
+    -fx-background-color: #11161B;
+    -fx-background-radius: 2;
+    -fx-border-color: #222B32;
     -fx-border-width: 1;
-    -fx-border-radius: 12;
-    -fx-padding: 16;
-    -fx-spacing: 6;
-    -fx-min-width: 190;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 14, 0.1, 0, 5);
+    -fx-padding: 14 16;
+    -fx-spacing: 5;
+    -fx-min-width: 180;
+    -fx-effect: null;
 }
 
 .building-card:hover {
-    -fx-border-color: #3A4A66;
+    -fx-border-color: #3DDC97;
 }
 
 .building-name {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 17px;
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 15px;
     -fx-font-weight: bold;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
 }
 
-/* ===================== LISTS / ROWS ===================== */
 .list-row {
-    -fx-background-color: #161B24;
-    -fx-background-radius: 10;
-    -fx-border-color: #232C3A;
-    -fx-border-radius: 10;
-    -fx-border-width: 1;
-    -fx-padding: 11 15;
+    -fx-background-color: #11161B;
+    -fx-border-color: #1A2228;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 9 12;
     -fx-spacing: 12;
     -fx-alignment: CENTER_LEFT;
 }
 
 .list-row:hover {
-    -fx-background-color: #1A2230;
-    -fx-border-color: #33415A;
+    -fx-background-color: #151C22;
+    -fx-border-color: #222B32 transparent #222B32 transparent;
+    -fx-border-width: 0 0 1 0;
 }
 
 .list-title {
-    -fx-text-fill: #DCE4F0;
-    -fx-font-size: 13px;
-    -fx-font-weight: bold;
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 12.5px;
 }
 
 .list-meta {
-    -fx-text-fill: #6F7B8F;
-    -fx-font-size: 11.5px;
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 11px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
 }
 
-/* ===================== BADGES ===================== */
+/* ===================== 机器状态标签 ===================== */
 .badge {
-    -fx-padding: 2 10;
-    -fx-background-radius: 999;
-    -fx-font-size: 11.5px;
-    -fx-font-weight: bold;
+    -fx-padding: 1 7;
+    -fx-font-size: 10.5px;
+    -fx-background-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-radius: 0;
 }
 
 .badge-success {
-    -fx-text-fill: #3DD68C;
-    -fx-background-color: rgba(61, 214, 140, 0.14);
+    -fx-text-fill: #3DDC97;
+    -fx-border-color: rgba(61, 220, 151, 0.45);
 }
 
 .badge-warning {
-    -fx-text-fill: #F2C55C;
-    -fx-background-color: rgba(242, 197, 92, 0.14);
+    -fx-text-fill: #FFC857;
+    -fx-border-color: rgba(255, 200, 87, 0.45);
 }
 
 .badge-danger {
-    -fx-text-fill: #F06B6B;
-    -fx-background-color: rgba(240, 107, 107, 0.14);
+    -fx-text-fill: #FF5C5C;
+    -fx-border-color: rgba(255, 92, 92, 0.45);
 }
 
 .badge-info {
-    -fx-text-fill: #6BA3FF;
-    -fx-background-color: rgba(76, 141, 255, 0.14);
+    -fx-text-fill: #8A97A0;
+    -fx-border-color: #2E3A44;
 }
 
 .badge-muted {
-    -fx-text-fill: #93A0B5;
-    -fx-background-color: rgba(147, 160, 181, 0.12);
+    -fx-text-fill: #5A666E;
+    -fx-border-color: #222B32;
 }
 
-/* ===================== BUTTONS ===================== */
+/* ===================== 按钮 ===================== */
 .btn-primary {
-    -fx-background-color: #4C8DFF;
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: #3DDC97;
+    -fx-background-radius: 2;
+    -fx-text-fill: #06110C;
+    -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-font-size: 12.5px;
-    -fx-padding: 7 16;
-    -fx-background-radius: 8;
+    -fx-padding: 6 14;
     -fx-cursor: hand;
-    -fx-border-width: 0;
+    -fx-border-width: 1;
+    -fx-border-color: #3DDC97;
+    -fx-border-radius: 2;
+    -fx-effect: null;
 }
 
 .btn-primary:hover {
-    -fx-background-color: #6BA3FF;
+    -fx-background-color: #6BE8B4;
+    -fx-border-color: #6BE8B4;
 }
 
 .btn-primary:pressed {
-    -fx-background-color: #3B76E0;
+    -fx-background-color: #2FB981;
 }
 
 .btn-primary:focused {
-    -fx-border-color: rgba(255, 255, 255, 0.55);
-    -fx-border-radius: 8;
-    -fx-border-width: 1;
+    -fx-border-color: #E6EDF0;
 }
 
 .btn-ghost {
-    -fx-background-color: #1B2432;
-    -fx-text-fill: #C4CEDD;
-    -fx-font-size: 12.5px;
-    -fx-padding: 7 14;
-    -fx-background-radius: 8;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 8;
-    -fx-border-width: 1;
+    -fx-background-color: transparent;
+    -fx-background-radius: 2;
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 12px;
+    -fx-padding: 6 12;
     -fx-cursor: hand;
+    -fx-border-color: #2E3A44;
+    -fx-border-width: 1;
+    -fx-border-radius: 2;
+    -fx-effect: null;
 }
 
 .btn-ghost:hover {
-    -fx-background-color: #232E3F;
-    -fx-text-fill: #FFFFFF;
-    -fx-border-color: #3A4A66;
+    -fx-background-color: #151C22;
+    -fx-border-color: #3DDC97;
+    -fx-text-fill: #E6EDF0;
 }
 
 .btn-ghost:pressed {
-    -fx-background-color: #18202C;
+    -fx-background-color: #11161B;
 }
 
 .btn-danger {
-    -fx-background-color: rgba(240, 107, 107, 0.14);
-    -fx-text-fill: #F58A8A;
-    -fx-font-size: 12.5px;
-    -fx-padding: 7 14;
-    -fx-background-radius: 8;
-    -fx-border-color: rgba(240, 107, 107, 0.32);
-    -fx-border-radius: 8;
-    -fx-border-width: 1;
+    -fx-background-color: transparent;
+    -fx-background-radius: 2;
+    -fx-text-fill: #FF5C5C;
+    -fx-font-size: 12px;
+    -fx-padding: 6 12;
     -fx-cursor: hand;
+    -fx-border-color: rgba(255, 92, 92, 0.45);
+    -fx-border-width: 1;
+    -fx-border-radius: 2;
+    -fx-effect: null;
 }
 
 .btn-danger:hover {
-    -fx-background-color: rgba(240, 107, 107, 0.24);
-    -fx-text-fill: #FFB4B4;
+    -fx-background-color: rgba(255, 92, 92, 0.12);
+    -fx-border-color: #FF5C5C;
 }
 
 .btn-icon {
     -fx-background-color: transparent;
-    -fx-background-radius: 8;
-    -fx-text-fill: #93A0B5;
-    -fx-padding: 6 10;
+    -fx-text-fill: #8A97A0;
+    -fx-padding: 5 8;
     -fx-cursor: hand;
-    -fx-font-size: 13px;
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+    -fx-background-radius: 2;
+    -fx-border-radius: 2;
 }
 
 .btn-icon:hover {
-    -fx-background-color: #1D2634;
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: #151C22;
+    -fx-border-color: #222B32;
+    -fx-text-fill: #E6EDF0;
 }
 
-/* ===================== FORM ===================== */
+/* ===================== 输入控件 ===================== */
 .text-field, .text-area, .password-field {
-    -fx-background-color: #121926;
-    -fx-text-fill: #E8EDF5;
-    -fx-font-size: 13px;
-    -fx-background-radius: 8;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 8;
+    -fx-background-color: #0E1418;
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 12.5px;
+    -fx-background-radius: 2;
+    -fx-border-color: #2E3A44;
+    -fx-border-radius: 2;
     -fx-border-width: 1;
-    -fx-prompt-text-fill: #5E6B80;
-    -fx-highlight-fill: #2F4C7A;
+    -fx-prompt-text-fill: #5A666E;
+    -fx-highlight-fill: rgba(61, 220, 151, 0.25);
+    -fx-highlight-text-fill: #E6EDF0;
 }
 
 .text-field, .password-field {
-    -fx-padding: 8 12;
+    -fx-padding: 7 10;
 }
 
-/* TextArea 自身用内边距会出现一圈"描边环"，这里改为内容区留白 */
 .text-area {
     -fx-padding: 2;
 }
@@ -501,102 +621,43 @@
     -fx-background-color: transparent;
 }
 
-.text-field:focused, .text-area:focused, .password-field:focused {
-    -fx-border-color: #4C8DFF;
-    -fx-background-color: #141C2A;
+.text-field:hover, .password-field:hover {
+    -fx-border-color: #3E4C56;
 }
 
-.text-field:hover, .password-field:hover {
-    -fx-border-color: #3A4A66;
+.text-field:focused, .text-area:focused, .password-field:focused {
+    -fx-border-color: #3DDC97;
 }
 
 .text-area .content {
-    -fx-background-color: #0B0F16;
-    -fx-background-radius: 6;
+    -fx-background-color: #0B0E11;
+    -fx-background-radius: 0;
     -fx-border-width: 0;
-    -fx-padding: 10 12;
+    -fx-padding: 9 11;
 }
 
 .combo-box {
-    -fx-background-color: #121926;
-    -fx-background-radius: 8;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 8;
+    -fx-background-color: #0E1418;
+    -fx-background-radius: 2;
+    -fx-border-color: #2E3A44;
+    -fx-border-radius: 2;
     -fx-border-width: 1;
-    -fx-padding: 2 4;
-}
-
-/* 日期选择器与下拉保持同一套控件外观 */
-.date-picker {
-    -fx-background-color: #121926;
-    -fx-background-radius: 8;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 8;
-    -fx-border-width: 1;
-}
-
-.date-picker:hover {
-    -fx-border-color: #3A4A66;
-}
-
-.date-picker:focused {
-    -fx-border-color: #4C8DFF;
-}
-
-.date-picker > .text-field {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-background-radius: 8 0 0 8;
-}
-
-.date-picker > .arrow-button {
-    -fx-background-color: transparent;
-}
-
-.date-picker > .arrow-button > .arrow {
-    -fx-background-color: #7C889C;
-}
-
-.date-picker-popup {
-    -fx-background-color: #1A2230;
-    -fx-border-color: #2A3546;
-    -fx-border-width: 1;
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 16, 0.15, 0, 6);
-}
-
-.date-picker-popup .month-year-pane {
-    -fx-background-color: #1F2937;
-}
-
-.date-picker-popup .day-cell:hover {
-    -fx-background-color: #232E3F;
-}
-
-.date-picker-popup .day-cell:selected {
-    -fx-background-color: #4C8DFF;
-}
-
-.dialog-pane > .content {
-    -fx-padding: 18 22 8 22;
-}
-
-.dialog-pane > .button-bar > .container {
-    -fx-padding: 0 22 18 22;
+    -fx-padding: 1 2;
 }
 
 .combo-box:hover {
-    -fx-border-color: #3A4A66;
+    -fx-border-color: #3E4C56;
 }
 
 .combo-box:focused {
-    -fx-border-color: #4C8DFF;
+    -fx-border-color: #3DDC97;
 }
 
 .combo-box .list-cell {
-    -fx-text-fill: #DCE4F0;
-    -fx-padding: 5 10;
+    -fx-background-color: transparent;
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 12.5px;
+    -fx-padding: 4 8;
 }
 
 .combo-box .arrow-button {
@@ -604,74 +665,129 @@
 }
 
 .combo-box .arrow {
-    -fx-background-color: #7C889C;
+    -fx-background-color: #8A97A0;
 }
 
 .combo-box-popup .list-view {
-    -fx-background-color: #1A2230;
-    -fx-border-color: #2A3546;
-    -fx-background-radius: 8;
-    -fx-border-radius: 8;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 16, 0.15, 0, 6);
+    -fx-background-color: #11161B;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-effect: null;
 }
 
 .combo-box .list-cell:selected {
-    -fx-background-color: rgba(76, 141, 255, 0.16);
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: rgba(61, 220, 151, 0.12);
+    -fx-text-fill: #E6EDF0;
+}
+
+.date-picker {
+    -fx-background-color: #0E1418;
+    -fx-background-radius: 2;
+    -fx-border-color: #2E3A44;
+    -fx-border-radius: 2;
+    -fx-border-width: 1;
+}
+
+.date-picker:hover {
+    -fx-border-color: #3E4C56;
+}
+
+.date-picker:focused {
+    -fx-border-color: #3DDC97;
+}
+
+.date-picker > .text-field {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+}
+
+.date-picker > .arrow-button {
+    -fx-background-color: transparent;
+}
+
+.date-picker > .arrow-button > .arrow {
+    -fx-background-color: #8A97A0;
+}
+
+.date-picker-popup {
+    -fx-background-color: #11161B;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-effect: null;
+}
+
+.date-picker-popup .month-year-pane {
+    -fx-background-color: #0E1418;
+}
+
+.date-picker-popup .day-cell:hover {
+    -fx-background-color: #1A2228;
+}
+
+.date-picker-popup .day-cell:selected {
+    -fx-background-color: #3DDC97;
+    -fx-text-fill: #06110C;
 }
 
 .check-box {
-    -fx-text-fill: #C4CEDD;
-    -fx-font-size: 12.5px;
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 12px;
 }
 
 .check-box .box {
-    -fx-background-color: #121926;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 4;
-    -fx-background-radius: 4;
+    -fx-background-color: #0E1418;
+    -fx-border-color: #2E3A44;
     -fx-border-width: 1;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 3;
 }
 
 .check-box:selected .box {
-    -fx-background-color: #4C8DFF;
-    -fx-border-color: #4C8DFF;
+    -fx-background-color: rgba(61, 220, 151, 0.15);
+    -fx-border-color: #3DDC97;
 }
 
 .check-box:selected .mark {
-    -fx-background-color: #FFFFFF;
+    -fx-background-color: #3DDC97;
 }
 
-/* ===================== TABLE ===================== */
+/* ===================== 表格 ===================== */
 .table-view {
-    -fx-background-color: #161B24;
-    -fx-background-radius: 12;
-    -fx-border-color: #232C3A;
-    -fx-border-radius: 12;
+    -fx-background-color: #0E1418;
+    -fx-background-radius: 2;
+    -fx-border-color: #222B32;
+    -fx-border-radius: 2;
     -fx-border-width: 1;
     -fx-padding: 0;
     -fx-table-cell-border-color: transparent;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 14, 0.1, 0, 4);
+    -fx-effect: null;
 }
 
 .table-view .column-header-background {
-    -fx-background-color: #131A24;
-    -fx-background-radius: 12 12 0 0;
-    -fx-border-color: transparent transparent #232C3A transparent;
+    -fx-background-color: #11161B;
+    -fx-background-radius: 0;
+    -fx-border-color: transparent transparent #222B32 transparent;
     -fx-border-width: 0 0 1 0;
 }
 
 .table-view .column-header {
     -fx-background-color: transparent;
-    -fx-border-color: transparent;
-    -fx-size: 38;
+    -fx-border-color: transparent #1A2228 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-size: 32;
 }
 
 .table-view .column-header .label {
-    -fx-text-fill: #7C889C;
-    -fx-font-weight: bold;
-    -fx-font-size: 11.5px;
-    -fx-padding: 8 12;
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+    -fx-padding: 6 10;
     -fx-alignment: CENTER_LEFT;
 }
 
@@ -681,9 +797,9 @@
 
 .table-row-cell {
     -fx-background-color: transparent;
-    -fx-border-color: transparent transparent #1D2531 transparent;
+    -fx-border-color: transparent transparent #1A2228 transparent;
     -fx-border-width: 0 0 1 0;
-    -fx-cell-size: 40px;
+    -fx-cell-size: 30px;
 }
 
 .table-row-cell:odd {
@@ -691,205 +807,119 @@
 }
 
 .table-row-cell:hover {
-    -fx-background-color: #1A2230;
+    -fx-background-color: #151C22;
 }
 
 .table-row-cell:selected {
-    -fx-background-color: rgba(76, 141, 255, 0.18);
+    -fx-background-color: rgba(61, 220, 151, 0.10);
 }
 
 .table-view .table-cell {
-    -fx-text-fill: #C4CEDD;
-    -fx-font-size: 12.5px;
-    -fx-padding: 6 12;
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 11.5px;
+    -fx-padding: 4 10;
     -fx-border-color: transparent;
     -fx-alignment: CENTER_LEFT;
 }
 
 .table-row-cell:selected .table-cell {
-    -fx-text-fill: #FFFFFF;
+    -fx-text-fill: #E6EDF0;
 }
 
 .table-view .placeholder .label {
-    -fx-text-fill: #5E6B80;
-    -fx-font-size: 12.5px;
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 12px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
 }
 
-/* ===================== TOOLBAR / PAGE BARS ===================== */
+/* ===================== 工具栏 / 分页 / 状态条 ===================== */
 .toolbar {
-    -fx-background-color: #161B24;
-    -fx-padding: 12 22;
-    -fx-spacing: 10;
-    -fx-border-color: transparent transparent #232C3A transparent;
+    -fx-background-color: #0B0E11;
+    -fx-padding: 10 18;
+    -fx-spacing: 8;
+    -fx-border-color: transparent transparent #222B32 transparent;
     -fx-border-width: 0 0 1 0;
-    -fx-alignment: CENTER_LEFT;
 }
 
 .pagination-bar {
-    -fx-background-color: #161B24;
-    -fx-padding: 10 22;
+    -fx-background-color: #0E1418;
+    -fx-padding: 6 18;
     -fx-spacing: 10;
-    -fx-border-color: #232C3A transparent transparent transparent;
+    -fx-border-color: #222B32 transparent transparent transparent;
     -fx-border-width: 1 0 0 0;
 }
 
 .status-bar {
-    -fx-background-color: #161B24;
-    -fx-background-radius: 10;
-    -fx-border-color: #232C3A;
-    -fx-border-radius: 10;
+    -fx-background-color: #0E1418;
+    -fx-border-color: #222B32;
     -fx-border-width: 1;
-    -fx-padding: 10 14;
-    -fx-spacing: 8;
-    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 6 10;
+    -fx-spacing: 12;
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 11px;
 }
 
-/* ===================== STATES ===================== */
+/* ===================== 空 / 错状态 ===================== */
 .empty-state {
-    -fx-text-fill: #66738A;
-    -fx-font-size: 13px;
-    -fx-padding: 18 0 8 0;
-}
-
-.empty-block {
-    -fx-background-color: #131A24;
-    -fx-background-radius: 12;
-    -fx-border-color: #232C3A;
-    -fx-border-width: 1;
-    -fx-border-style: dashed;
-    -fx-border-radius: 12;
-    -fx-padding: 34 24;
-    -fx-alignment: CENTER;
-    -fx-spacing: 6;
-}
-
-.empty-block-icon {
-    -fx-icon-color: #4C6A96;
-    -fx-icon-size: 26;
-}
-
-.empty-block-title {
-    -fx-text-fill: #C4CEDD;
-    -fx-font-size: 13.5px;
-    -fx-font-weight: bold;
-}
-
-.empty-block-hint {
-    -fx-text-fill: #66738A;
+    -fx-text-fill: #5A666E;
     -fx-font-size: 12px;
 }
 
-.error-state {
-    -fx-text-fill: #F06B6B;
-    -fx-font-size: 13px;
-    -fx-padding: 14 0 8 0;
+.empty-block {
+    -fx-background-color: transparent;
+    -fx-border-color: #2E3A44;
+    -fx-border-width: 1;
+    -fx-border-style: segments(4, 4);
+    -fx-border-radius: 2;
+    -fx-padding: 22;
+    -fx-spacing: 6;
+    -fx-alignment: CENTER;
 }
 
-/* ===================== MISC CONTROLS ===================== */
+.empty-block-icon {
+    -fx-icon-color: #3DDC97;
+    -fx-icon-size: 20;
+}
+
+.empty-block-title {
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 12.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+}
+
+.empty-block-hint {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 11px;
+}
+
+.error-state {
+    -fx-text-fill: #FF5C5C;
+    -fx-font-size: 12px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+}
+
+/* ===================== 基础控件 ===================== */
 .label {
-    -fx-text-fill: #C4CEDD;
+    -fx-text-fill: #B9C3CB;
 }
 
 .separator .line {
-    -fx-border-color: #232C3A;
+    -fx-border-color: #222B32;
     -fx-border-width: 1 0 0 0;
 }
 
-.titled-pane {
-    -fx-text-fill: #C4CEDD;
-}
-
-.titled-pane > .title {
-    -fx-background-color: #161B24;
-    -fx-background-radius: 10 10 0 0;
-    -fx-border-color: #232C3A;
-    -fx-border-width: 1;
-    -fx-border-radius: 10 10 0 0;
-    -fx-padding: 10 14;
-}
-
-.titled-pane > .title > .text {
-    -fx-fill: #E8EDF5;
-    -fx-font-weight: bold;
-}
-
-.titled-pane > .content {
-    -fx-background-color: #161B24;
-    -fx-border-color: #232C3A;
-    -fx-border-width: 0 1 1 1;
-    -fx-border-radius: 0 0 10 10;
-    -fx-padding: 4;
-}
-
-.list-view {
-    -fx-background-color: #161B24;
-    -fx-border-color: #232C3A;
-    -fx-background-radius: 10;
-    -fx-border-radius: 10;
-}
-
-.list-cell {
-    -fx-background-color: transparent;
-    -fx-text-fill: #C4CEDD;
-    -fx-padding: 7 12;
-}
-
-.list-cell:hover {
-    -fx-background-color: #1A2230;
-}
-
-.list-cell:selected {
-    -fx-background-color: rgba(76, 141, 255, 0.18);
-    -fx-text-fill: #FFFFFF;
-}
-
-.tab-pane {
-    -fx-background-color: #0F1218;
-}
-
-.tab-pane .tab-header-background {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent transparent #232C3A transparent;
-    -fx-border-width: 0 0 1 0;
-}
-
-.tab {
-    -fx-background-color: transparent;
-    -fx-padding: 7 16;
-}
-
-.tab .tab-label {
-    -fx-text-fill: #7C889C;
-    -fx-font-size: 12.5px;
-}
-
-.tab:hover .tab-label {
-    -fx-text-fill: #C4CEDD;
-}
-
-.tab:selected {
-    -fx-background-color: transparent;
-    -fx-border-color: transparent transparent #4C8DFF transparent;
-    -fx-border-width: 0 0 2 0;
-}
-
-.tab:selected .tab-label {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-weight: bold;
-}
-
 .tooltip {
-    -fx-background-color: #1D2634;
-    -fx-text-fill: #DCE4F0;
-    -fx-font-size: 11.5px;
-    -fx-padding: 6 10;
-    -fx-background-radius: 6;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 6;
+    -fx-background-color: #11161B;
+    -fx-text-fill: #E6EDF0;
+    -fx-border-color: #222B32;
     -fx-border-width: 1;
+    -fx-background-radius: 2;
+    -fx-border-radius: 2;
+    -fx-font-size: 11.5px;
+    -fx-padding: 5 8;
+    -fx-effect: null;
 }
 
-/* ===================== SCROLL BARS ===================== */
 .scroll-bar {
     -fx-background-color: transparent;
 }
@@ -904,12 +934,12 @@
 }
 
 .scroll-bar .thumb {
-    -fx-background-color: #2E3A4C;
-    -fx-background-radius: 999;
+    -fx-background-color: #2E3A44;
+    -fx-background-radius: 0;
 }
 
 .scroll-bar .thumb:hover {
-    -fx-background-color: #41516A;
+    -fx-background-color: #3DDC97;
 }
 
 .scroll-bar .increment-button, .scroll-bar .decrement-button {
@@ -918,12 +948,13 @@
 }
 
 .scroll-bar .increment-arrow, .scroll-bar .decrement-arrow {
-    -fx-background-color: transparent;
-    -fx-shape: " ";
+    -fx-background-color: #5A666E;
 }
 
 .scroll-pane {
     -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
 }
 
 .scroll-pane > .viewport {
@@ -934,101 +965,346 @@
     -fx-background-color: transparent;
 }
 
-/* ===================== DIALOG ===================== */
-.dialog-pane {
-    -fx-background-color: #161B24;
-    -fx-border-color: #2A3546;
+/* ===================== 列表 / Tab ===================== */
+.list-view {
+    -fx-background-color: #0E1418;
+    -fx-border-color: #222B32;
     -fx-border-width: 1;
+    -fx-background-radius: 2;
+    -fx-border-radius: 2;
+    -fx-effect: null;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #B9C3CB;
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+}
+
+.list-cell:hover {
+    -fx-background-color: #151C22;
+}
+
+.list-cell:selected {
+    -fx-background-color: rgba(61, 220, 151, 0.10);
+    -fx-text-fill: #E6EDF0;
+}
+
+.tab-pane {
+    -fx-background-color: transparent;
+}
+
+.tab-pane .tab-header-background {
+    -fx-background-color: #0E1418;
+    -fx-border-color: transparent transparent #222B32 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tab {
+    -fx-background-color: transparent;
+    -fx-padding: 6 14;
+    -fx-border-width: 0 0 2 0;
+    -fx-border-color: transparent;
+}
+
+.tab .tab-label {
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 12px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+}
+
+.tab:hover .tab-label {
+    -fx-text-fill: #E6EDF0;
+}
+
+.tab:selected {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent transparent #3DDC97 transparent;
+}
+
+.tab:selected .tab-label {
+    -fx-text-fill: #3DDC97;
+}
+
+/* ===================== 对话框 ===================== */
+.dialog-pane {
+    -fx-background-color: #11161B;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+    -fx-effect: null;
 }
 
 .dialog-pane .header-panel {
-    -fx-background-color: #1A2230;
+    -fx-background-color: #0E1418;
+    -fx-border-color: transparent transparent #222B32 transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 14 18;
 }
 
 .dialog-pane .label {
-    -fx-text-fill: #C4CEDD;
+    -fx-text-fill: #B9C3CB;
 }
 
 .dialog-pane .content.label {
-    -fx-font-size: 13px;
-}
-
-.dialog-pane:header .header-panel .label {
-    -fx-text-fill: #FFFFFF;
-    -fx-font-size: 14px;
-    -fx-font-weight: bold;
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 12.5px;
 }
 
 .dialog-pane .button {
-    -fx-background-color: #1B2432;
-    -fx-text-fill: #C4CEDD;
-    -fx-background-radius: 8;
-    -fx-border-color: #2A3546;
-    -fx-border-radius: 8;
+    -fx-background-color: transparent;
+    -fx-text-fill: #B9C3CB;
+    -fx-border-color: #2E3A44;
     -fx-border-width: 1;
-    -fx-padding: 7 16;
+    -fx-background-radius: 2;
+    -fx-border-radius: 2;
+    -fx-padding: 6 14;
+    -fx-font-size: 12px;
     -fx-cursor: hand;
 }
 
 .dialog-pane .button:hover {
-    -fx-background-color: #232E3F;
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: #151C22;
+    -fx-border-color: #3DDC97;
+    -fx-text-fill: #E6EDF0;
 }
 
 .dialog-pane .button:default {
-    -fx-background-color: #4C8DFF;
-    -fx-text-fill: #FFFFFF;
-    -fx-border-color: transparent;
+    -fx-background-color: #3DDC97;
+    -fx-text-fill: #06110C;
+    -fx-border-color: #3DDC97;
     -fx-font-weight: bold;
 }
 
 .dialog-pane .button:default:hover {
-    -fx-background-color: #6BA3FF;
+    -fx-background-color: #6BE8B4;
 }
 
-/* ===================== PAGINATION / PROGRESS ===================== */
+.dialog-pane > .content {
+    -fx-padding: 16 20 6 20;
+}
+
+.dialog-pane > .button-bar > .container {
+    -fx-padding: 0 20 16 20;
+}
+
+/* ===================== 进度条 ===================== */
+.progress-bar {
+    -fx-accent: #3DDC97;
+}
+
+.progress-bar .track {
+    -fx-background-color: #1A2228;
+    -fx-background-radius: 0;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+}
+
+.progress-bar .bar {
+    -fx-background-color: #3DDC97;
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+}
+
+/* ===================== 命令面板 / 事件流 ===================== */
+.cmd-panel {
+    -fx-background-color: #11161B;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+    -fx-padding: 14 16;
+    -fx-spacing: 8;
+}
+
+.cmd-action {
+    -fx-background-color: transparent;
+    -fx-border-color: #222B32;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 8 10;
+    -fx-text-fill: #B9C3CB;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+    -fx-font-size: 12px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-cursor: hand;
+}
+
+.cmd-action:hover {
+    -fx-background-color: #151C22;
+    -fx-text-fill: #3DDC97;
+}
+
+.event-row {
+    -fx-background-color: transparent;
+    -fx-border-color: #1A2228;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 5 8;
+    -fx-spacing: 10;
+}
+
+.event-time {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.event-kind {
+    -fx-text-fill: #3DDC97;
+    -fx-font-size: 10.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.event-msg {
+    -fx-text-fill: #B9C3CB;
+    -fx-font-size: 11.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+}
+
+.ascii-bar {
+    -fx-text-fill: #3DDC97;
+    -fx-font-size: 12px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+/* ===================== 日志 ===================== */
+.log-viewer .content {
+    -fx-background-color: #0B0E11;
+    -fx-font-family: "Cascadia Mono", "JetBrains Mono", "Consolas", monospace;
+    -fx-font-size: 11.5px;
+    -fx-text-fill: #B9C3CB;
+    -fx-padding: 10 12;
+}
+
+/* ===================== 登录（保留，暗色极客） ===================== */
+.login-root {
+    -fx-background-color: #0B0E11;
+}
+
+.login-logo {
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+}
+
+.login-edition {
+    -fx-text-fill: #3DDC97;
+    -fx-font-size: 11px;
+    -fx-font-family: "Cascadia Mono", "Consolas", monospace;
+}
+
+.login-subtitle {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 12px;
+}
+
+.login-message {
+    -fx-text-fill: #FF5C5C;
+    -fx-font-size: 12px;
+}
+
+.login-button {
+    -fx-background-color: #3DDC97;
+    -fx-text-fill: #06110C;
+    -fx-background-radius: 2;
+    -fx-font-weight: bold;
+}
+
+.auto-login-check {
+    -fx-text-fill: #8A97A0;
+}
+
+/* ===================== TitledPane ===================== */
+.titled-pane {
+    -fx-text-fill: #B9C3CB;
+}
+
+.titled-pane > .title {
+    -fx-background-color: #11161B;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+    -fx-background-radius: 2;
+    -fx-border-radius: 2;
+    -fx-padding: 6 10;
+}
+
+.titled-pane > .title > .text {
+    -fx-fill: #B9C3CB;
+    -fx-font-size: 12px;
+}
+
+.titled-pane > .content {
+    -fx-background-color: transparent;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+    -fx-padding: 8;
+}
+
+/* ===================== 分页控件 ===================== */
 .pagination .pagination-control {
     -fx-background-color: transparent;
 }
 
 .pagination .toggle-button {
     -fx-background-color: transparent;
-    -fx-text-fill: #7C889C;
-    -fx-background-radius: 6;
+    -fx-text-fill: #8A97A0;
+    -fx-background-radius: 2;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
 }
 
 .pagination .toggle-button:selected {
-    -fx-background-color: rgba(76, 141, 255, 0.16);
-    -fx-text-fill: #FFFFFF;
+    -fx-background-color: rgba(61, 220, 151, 0.12);
+    -fx-text-fill: #3DDC97;
+    -fx-border-color: #3DDC97;
 }
 
 .pagination .arrow-button .arrow {
-    -fx-background-color: #7C889C;
-}
-
-.progress-bar {
-    -fx-accent: #4C8DFF;
-}
-
-.progress-bar .track {
-    -fx-background-color: #1B2432;
-    -fx-background-radius: 999;
-}
-
-.progress-bar .bar {
-    -fx-background-radius: 999;
+    -fx-background-color: #8A97A0;
 }
 
 .split-pane:horizontal > .split-pane-divider,
 .split-pane:vertical > .split-pane-divider {
-    -fx-background-color: #232C3A;
+    -fx-background-color: #222B32;
 }
 
-/* ===================== LOG VIEWER ===================== */
-.log-viewer .content {
-    -fx-background-color: #0B0F16;
-    -fx-font-family: "Consolas", "Cascadia Code", "Source Code Pro", "Courier New", monospace;
-    -fx-font-size: 12.5px;
-    -fx-text-fill: #B9C4D4;
-    -fx-padding: 14 16;
+/* ===================== 启动加载页 ===================== */
+.splash-root {
+    -fx-background-color: #0B0E11;
+    -fx-border-color: #222B32;
+    -fx-border-width: 1;
+}
+
+.splash-box {
+    -fx-padding: 26 30;
+}
+
+.splash-title {
+    -fx-text-fill: #E6EDF0;
+    -fx-font-size: 30px;
+    -fx-font-weight: bold;
+}
+
+.splash-subtitle {
+    -fx-text-fill: #8A97A0;
+    -fx-font-size: 12px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
+}
+
+.splash-bar {
+    -fx-pref-height: 4;
+    -fx-accent: #3DDC97;
+}
+
+.splash-bar .track {
+    -fx-background-color: #1A2228;
+    -fx-background-radius: 0;
+}
+
+.splash-bar .bar {
+    -fx-background-color: #3DDC97;
+    -fx-background-radius: 0;
+}
+
+.splash-hint {
+    -fx-text-fill: #5A666E;
+    -fx-font-size: 10.5px;
+    -fx-font-family: "Cascadia Mono", "Consolas", "Microsoft YaHei UI", monospace;
 }

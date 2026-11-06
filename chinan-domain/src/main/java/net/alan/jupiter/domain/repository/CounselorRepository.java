@@ -18,6 +18,8 @@ public interface CounselorRepository extends JpaRepository<Counselor, String> {
 
     Optional<Counselor> findByStudentNo(String studentNo);
 
+    Optional<Counselor> findFirstByName(String name);
+
     boolean existsByStudentNo(String studentNo);
 
     List<Counselor> findByStudentNoIn(List<String> studentNos);

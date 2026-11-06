@@ -26,6 +26,12 @@ public interface CheckRecordRepository extends JpaRepository<CheckRecord, String
 
     List<CheckRecord> findByTaskIdAndStudentIdIn(String taskId, List<String> studentIds);
 
+    /**
+     * 按客户端幂等键查询首次提交落库的记录（一次提交对应一行/一个学生）。
+     * 重复提交时据此直接返回首次结果，避免重复写入与重复审计。
+     */
+    List<CheckRecord> findByClientOpId(String clientOpId);
+
     long countByTaskId(String taskId);
 
     long countByTaskIdAndRoomId(String taskId, String roomId);

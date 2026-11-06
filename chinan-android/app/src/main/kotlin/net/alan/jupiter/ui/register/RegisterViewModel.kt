@@ -15,9 +15,10 @@ import javax.inject.Inject
 
 data class RegisterUiState(
     val name: String = "",
-    val studentNo: String = "",
-    val className: String = "",
+    val gender: String = "",
     val phone: String = "",
+    val department: String = "",
+    val className: String = "",
     val password: String = "",
     val confirmPassword: String = "",
     val host: String = "",
@@ -45,9 +46,10 @@ class RegisterViewModel @Inject constructor(
     }
 
     fun updateName(value: String) = _uiState.update { it.copy(name = value, error = null) }
-    fun updateStudentNo(value: String) = _uiState.update { it.copy(studentNo = value, error = null) }
-    fun updateClassName(value: String) = _uiState.update { it.copy(className = value, error = null) }
+    fun updateGender(value: String) = _uiState.update { it.copy(gender = value, error = null) }
     fun updatePhone(value: String) = _uiState.update { it.copy(phone = value, error = null) }
+    fun updateDepartment(value: String) = _uiState.update { it.copy(department = value, error = null) }
+    fun updateClassName(value: String) = _uiState.update { it.copy(className = value, error = null) }
     fun updatePassword(value: String) = _uiState.update { it.copy(password = value, error = null) }
     fun updateConfirmPassword(value: String) = _uiState.update { it.copy(confirmPassword = value, error = null) }
     fun updateHost(value: String) = _uiState.update { it.copy(host = value, error = null) }
@@ -63,8 +65,12 @@ class RegisterViewModel @Inject constructor(
             _uiState.update { it.copy(error = "请输入姓名") }
             return
         }
-        if (state.studentNo.isBlank()) {
-            _uiState.update { it.copy(error = "请输入学号") }
+        if (state.phone.length != 11) {
+            _uiState.update { it.copy(error = "请输入 11 位手机号") }
+            return
+        }
+        if (state.department.isBlank()) {
+            _uiState.update { it.copy(error = "请输入部门") }
             return
         }
         if (state.className.isBlank()) {
@@ -73,6 +79,10 @@ class RegisterViewModel @Inject constructor(
         }
         if (state.password.isBlank()) {
             _uiState.update { it.copy(error = "请输入密码") }
+            return
+        }
+        if (state.password.length < 4) {
+            _uiState.update { it.copy(error = "密码至少 4 位") }
             return
         }
         if (state.password != state.confirmPassword) {
@@ -85,9 +95,10 @@ class RegisterViewModel @Inject constructor(
             serverConfigManager.saveServerConfig(state.host.trim(), state.port.trim().ifBlank { "49749" })
             when (val result = repository.submitRegistration(
                 name = state.name.trim(),
-                studentNo = state.studentNo.trim(),
-                className = state.className.trim(),
+                gender = state.gender.trim(),
                 phone = state.phone.trim(),
+                department = state.department.trim(),
+                className = state.className.trim(),
                 password = state.password
             )) {
                 is Resource.Success -> _uiState.update {

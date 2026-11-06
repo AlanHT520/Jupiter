@@ -18,4 +18,10 @@ sealed class Screen(val route: String) {
     }
     data object Settings : Screen("settings")
     data object Profile : Screen("profile")
+
+    /** A09 总汇总（本地聚合） */
+    data object Summary : Screen("summary")
+
+    /** A10 缓存与同步（outbox / 补交 / 清除数据） */
+    data object Sync : Screen("sync")
 }

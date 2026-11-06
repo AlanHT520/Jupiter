@@ -13,4 +13,6 @@ public interface CounselorRegistrationRepository extends JpaRepository<Counselor
     List<CounselorRegistration> findByStatusNotOrderBySubmittedAtDesc(RegistrationStatus status);
 
     boolean existsByStudentNoAndStatus(String studentNo, RegistrationStatus status);
+
+    boolean existsByPhoneAndStatus(String phone, RegistrationStatus status);
 }

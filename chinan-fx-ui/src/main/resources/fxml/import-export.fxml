@@ -4,27 +4,39 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.geometry.Insets?>
 
-<VBox xmlns="http://javafx.com/javafx"
+<HBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="net.alan.jupiter.fx.controller.ImportExportController"
-      spacing="12"
-      styleClass="root">
+      spacing="0" styleClass="root">
 
-    <padding><Insets top="20" right="20" bottom="20" left="20"/></padding>
+    <!-- 左：命令列表 -->
+    <VBox styleClass="cmd-panel" minWidth="250" prefWidth="250">
+        <Label text="COMMANDS" styleClass="section-label"/>
+        <Label text="导入导出命令面板" styleClass="page-title"/>
 
-    <Label text="数据导入导出" styleClass="page-title"/>
+        <Button fx:id="cmdImportRoster" text="▸ 导入花名册" styleClass="cmd-action"
+                maxWidth="Infinity" onAction="#onImportRoster"/>
+        <Button fx:id="cmdImportCounselors" text="▸ 导入工作人员名单" styleClass="cmd-action"
+                maxWidth="Infinity" onAction="#onImportCounselors"/>
+        <Button fx:id="cmdExport" text="▸ 全量聚合导出" styleClass="cmd-action"
+                maxWidth="Infinity" onAction="#onExport"/>
 
-    <HBox spacing="12">
-        <Button fx:id="importBtn" text="导入宿舍数据" onAction="#onImport" styleClass="btn-primary"/>
-        <Button fx:id="exportBtn" text="导出报表" onAction="#onExport" styleClass="btn-ghost"/>
-    </HBox>
+        <Region VBox.vgrow="ALWAYS"/>
 
-    <HBox spacing="8" styleClass="status-bar">
-        <Label text="状态:"/>
-        <Label fx:id="statusLabel" text="就绪"/>
-    </HBox>
+        <Label text="全部操作在后台线程执行" styleClass="caption"/>
+        <Label text="导出结果写入所选目录" styleClass="caption"/>
+    </VBox>
 
-    <TextArea fx:id="logArea" VBox.vgrow="ALWAYS"
-              editable="false" wrapText="true"
-              promptText="操作日志"/>
-</VBox>
+    <!-- 右：状态 + 进度 + 事件日志 -->
+    <VBox VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS" spacing="0" styleClass="root">
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="toolbar">
+            <Label fx:id="statusLabel" text="● IDLE" styleClass="machine"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="清空日志" styleClass="btn-ghost" onAction="#onClearLog"/>
+        </HBox>
+
+        <ProgressBar fx:id="progressBar" maxWidth="Infinity" progress="0"/>
+        <TextArea fx:id="logArea" VBox.vgrow="ALWAYS" editable="false" wrapText="true"
+                  promptText="操作日志" styleClass="log-viewer"/>
+    </VBox>
+</HBox>

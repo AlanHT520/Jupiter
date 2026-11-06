@@ -48,6 +48,7 @@ public class ImportClassRosterService {
 
     private final StudentRepository studentRepository;
     private final ClassInfoRepository classInfoRepository;
+    private final CounselorRepository counselorRepository;
     private final RoomRepository roomRepository;
     private final DormBuildingRepository buildingRepository;
     private final FloorRepository floorRepository;
@@ -66,6 +67,25 @@ public class ImportClassRosterService {
                 sampleRow.createCell(i).setCellValue(SAMPLE_ROW.get(i));
             }
             autoSizeSheet(importSheet, TEMPLATE_HEADERS.size());
+
+            // Sheet 2：班级信息（班级 ↔ 学院 / 班主任），用于请假明细、班主任归属
+            Sheet classSheet = workbook.createSheet("班级信息");
+            String[] classHeaders = {"班级", "学院", "班主任", "专业", "年级"};
+            Row classHeaderRow = classSheet.createRow(0);
+            for (int i = 0; i < classHeaders.length; i++) {
+                classHeaderRow.createCell(i).setCellValue(classHeaders[i]);
+            }
+            String[][] classSamples = {
+                    {"机车2602", "铁道机车学院", "王老师", "铁道机车", "2026"},
+                    {"机车2603", "铁道机车学院", "李老师", "铁道机车", "2026"}
+            };
+            for (int r = 0; r < classSamples.length; r++) {
+                Row row = classSheet.createRow(r + 1);
+                for (int c = 0; c < classSamples[r].length; c++) {
+                    row.createCell(c).setCellValue(classSamples[r][c]);
+                }
+            }
+            autoSizeSheet(classSheet, classHeaders.length);
 
             Sheet instructionSheet = workbook.createSheet("填写说明");
             Row insHeader = instructionSheet.createRow(0);
@@ -175,6 +195,13 @@ public class ImportClassRosterService {
         }
 
         studentRepository.saveAll(toSave);
+
+        // 统计本次真正用到的「班级信息」条数（只算名册里出现的班级）
+        result.setClassMapped((int) validStudents.stream()
+                .map(Student::getClassName)
+                .filter(className -> className != null && classMetas.containsKey(className))
+                .distinct()
+                .count());
         return result;
     }
 
@@ -239,7 +266,7 @@ public class ImportClassRosterService {
             return ci;
         });
 
-        // 用「班级明细」Sheet 的映射补齐学院和班主任
+        // 用「班级信息 / 班级明细」Sheet 的映射补齐学院、班主任、专业、年级
         ExcelImportHelper.ClassMeta meta = classMetas.get(className);
         if (meta != null) {
             boolean needSave = false;
@@ -251,6 +278,27 @@ public class ImportClassRosterService {
             if (meta.headTeacher() != null && !meta.headTeacher().isBlank()
                     && !meta.headTeacher().equals(classInfo.getCounselorName())) {
                 classInfo.setCounselorName(meta.headTeacher());
+                needSave = true;
+            }
+            if (meta.major() != null && !meta.major().isBlank()
+                    && !meta.major().equals(classInfo.getMajor())) {
+                classInfo.setMajor(meta.major());
+                needSave = true;
+            }
+            if (meta.grade() != null && !meta.grade().isBlank()
+                    && !meta.grade().equals(classInfo.getGrade())) {
+                classInfo.setGrade(meta.grade());
+                needSave = true;
+            }
+            // 班主任能对上已有账号时建立关联，便于按老师查询班级
+            if (classInfo.getCounselor() == null
+                    && meta.headTeacher() != null && !meta.headTeacher().isBlank()) {
+                counselorRepository.findFirstByName(meta.headTeacher()).ifPresent(c -> {
+                    classInfo.setCounselor(c);
+                    if (classInfo.getCounselorName() == null || classInfo.getCounselorName().isBlank()) {
+                        classInfo.setCounselorName(c.getName());
+                    }
+                });
                 needSave = true;
             }
             if (needSave) {
@@ -358,6 +406,8 @@ public class ImportClassRosterService {
         private int deleted;
         /** 本次导入未出现、被标记为停用（离校）的学生数 */
         private int disabled;
+        /** 本次名册中命中「班级信息」Sheet 的班级数 */
+        private int classMapped;
         private final List<String> skippedNos = new ArrayList<>();
         private final List<String> updatedNos = new ArrayList<>();
         private final List<String> deletedNos = new ArrayList<>();

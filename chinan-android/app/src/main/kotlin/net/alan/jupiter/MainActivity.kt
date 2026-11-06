@@ -8,8 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,12 +18,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import dagger.hilt.android.AndroidEntryPoint
 import net.alan.jupiter.data.local.TokenManager
 import net.alan.jupiter.data.remote.UpdateManager
 import net.alan.jupiter.ui.navigation.AppNavGraph
 import net.alan.jupiter.ui.navigation.Screen
 import net.alan.jupiter.ui.theme.ChinanTheme
+import net.alan.jupiter.ui.theme.QnAccent
+import net.alan.jupiter.ui.theme.QnBg
 import net.alan.jupiter.ui.update.UpdateDialog
 import javax.inject.Inject
 
@@ -56,10 +59,13 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            ChinanTheme {
+            // 暗色唯一主题：显式关闭跟随系统浅色
+            ChinanTheme(darkTheme = true) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding(),
+                    color = QnBg
                 ) {
                     var startDestination by remember { mutableStateOf<String?>(null) }
 
@@ -76,7 +82,10 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            CircularProgressIndicator(
+                                color = QnAccent,
+                                strokeWidth = 2.dp
+                            )
                         }
                     }
 

@@ -18,6 +18,8 @@ data class TaskOverviewUiState(
     val buildingName: String = "",
     val floors: List<FloorOverview> = emptyList(),
     val isLoading: Boolean = false,
+    /** 网络失败时用本地快照兜底展示 */
+    val cacheOnly: Boolean = false,
     val error: String? = null
 )
 
@@ -31,13 +33,41 @@ class TaskOverviewViewModel @Inject constructor(
 
     fun loadOverview(taskId: String, taskNo: String, buildingName: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null, taskNo = taskNo, buildingName = buildingName) }
+            _uiState.update {
+                it.copy(
+                    isLoading = true,
+                    error = null,
+                    taskNo = taskNo,
+                    buildingName = buildingName
+                )
+            }
             when (val result = repository.getTaskOverview(taskId)) {
                 is Resource.Success -> _uiState.update {
-                    it.copy(isLoading = false, floors = result.data.floors)
+                    it.copy(
+                        isLoading = false,
+                        floors = result.data.floors,
+                        cacheOnly = false,
+                        error = null
+                    )
                 }
-                is Resource.Error -> _uiState.update { it.copy(isLoading = false, error = result.message) }
-                is Resource.Unauthorized -> _uiState.update { it.copy(isLoading = false, error = result.message) }
+                is Resource.Error -> {
+                    val cached = repository.cachedOverview(taskId)
+                    if (cached != null) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                floors = cached.floors,
+                                cacheOnly = true,
+                                error = result.message
+                            )
+                        }
+                    } else {
+                        _uiState.update { it.copy(isLoading = false, error = result.message) }
+                    }
+                }
+                is Resource.Unauthorized -> _uiState.update {
+                    it.copy(isLoading = false, error = result.message)
+                }
                 is Resource.Loading -> {}
             }
         }

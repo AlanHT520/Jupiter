@@ -3,7 +3,7 @@ package net.alan.jupiter.domain.enums;
 public enum RoleType {
 
     ADMIN("管理员"),
-    COUNSELOR("辅导员"),
+    COUNSELOR("工作人员"),
     CAPTAIN("学生组长");
 
     private final String label;

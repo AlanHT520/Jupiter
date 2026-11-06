@@ -19,7 +19,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "v-0.8.9"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -87,6 +87,9 @@ dependencies {
     implementation("androidx.room:room-ktx:2.8.5")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // 离线同步：网络恢复 / 周期重试（SyncWorker）
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
 
     implementation("androidx.camera:camera-core:1.3.4")
     implementation("androidx.camera:camera-camera2:1.3.4")

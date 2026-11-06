@@ -14,10 +14,12 @@ import net.alan.jupiter.domain.model.Counselor;
 import net.alan.jupiter.domain.model.DormBuilding;
 import net.alan.jupiter.domain.model.Floor;
 import net.alan.jupiter.domain.model.Task;
+
 import net.alan.jupiter.domain.repository.CounselorRepository;
 import net.alan.jupiter.domain.repository.DormBuildingRepository;
 import net.alan.jupiter.domain.repository.FloorRepository;
 import net.alan.jupiter.domain.repository.TaskRepository;
+import net.alan.jupiter.application.task.TaskTemplateService;
 import net.alan.jupiter.fx.model.TaskRow;
 import net.alan.jupiter.fx.util.DialogUtils;
 import net.alan.jupiter.fx.util.FxUtils;
@@ -38,6 +40,7 @@ public class TaskController {
     private final DormBuildingRepository buildingRepository;
     private final FloorRepository floorRepository;
     private final CounselorRepository counselorRepository;
+    private final TaskTemplateService taskTemplateService;
 
     @FXML
     private TableView<TaskRow> taskTable;
@@ -89,6 +92,8 @@ public class TaskController {
     @FXML
     public void initialize() {
         taskTable.setColumnResizePolicy(javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY);
+        // 任务预分配需要多选：勾选多条任务保存成一个预分配
+        taskTable.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
 
         colTaskNo.setCellValueFactory(c -> c.getValue().getTaskNo());
         colTaskNo.setCellFactory(col -> {
@@ -206,6 +211,7 @@ public class TaskController {
         TextField titleField = new TextField();
         titleField.setPrefWidth(260);
         titleField.setPromptText("如：2024秋 第3周晚查寝");
+        titleField.setText(LocalDate.now() + " 晚查寝");
         DatePicker datePicker = new DatePicker(LocalDate.now());
 
         ComboBox<DormBuilding> buildingCombo = new ComboBox<>();
@@ -217,6 +223,20 @@ public class TaskController {
         roomField.setPromptText("如 101,102,103，留空表示全部房间");
         ComboBox<Counselor> counselorCombo = new ComboBox<>();
         counselorCombo.setPromptText("选择查宿者");
+        counselorCombo.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Counselor c, boolean empty) {
+                super.updateItem(c, empty);
+                setText(empty || c == null ? "" : displayCounselor(c));
+            }
+        });
+        counselorCombo.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Counselor c, boolean empty) {
+                super.updateItem(c, empty);
+                setText(empty || c == null ? "" : displayCounselor(c));
+            }
+        });
 
         buildingCombo.setOnAction(e -> {
             DormBuilding building = buildingCombo.getValue();
@@ -359,7 +379,144 @@ public class TaskController {
         });
 
         Optional<Task> result = dialog.showAndWait();
-        result.ifPresent(task -> loadData());
+        result.ifPresent(task -> {
+            loadData();
+            DialogUtils.showInfo("任务已创建",
+                    "任务 " + task.getTaskNo() + " 已创建\n"
+                            + "查宿者：" + (task.getAssignedCounselorName() != null
+                            ? task.getAssignedCounselorName() : "-"));
+        });
+    }
+
+    private static String displayCounselor(Counselor c) {
+        String base = c.getName() != null && !c.getName().isBlank()
+                ? c.getName() : c.getUsername();
+        if (c.getClassName() != null && !c.getClassName().isBlank()) {
+            base += "（" + c.getClassName() + "）";
+        }
+        return base;
+    }
+
+    @FXML
+    private void onSaveTemplate() {
+        java.util.List<TaskRow> selected =
+                new java.util.ArrayList<>(taskTable.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty()) {
+            DialogUtils.showWarn("未选择任务", "请先在列表里选中一条或多条任务，再存为预分配");
+            return;
+        }
+        TextInputDialog nameDialog = new TextInputDialog("晚查寝预分配");
+        nameDialog.setTitle("保存任务预分配");
+        nameDialog.setHeaderText("把选中的 " + selected.size() + " 条任务保存为预分配");
+        nameDialog.setContentText("预分配名称:");
+        nameDialog.showAndWait().filter(name -> !name.isBlank()).ifPresent(name -> {
+            java.util.List<String> ids = selected.stream()
+                    .map(row -> row.getTaskId().get()).toList();
+            FxUtils.runAsync(
+                    () -> taskTemplateService.saveFromTasks(name.trim(), ids),
+                    template -> {
+                        DialogUtils.showInfo("预分配已保存",
+                                "预分配「" + template.getName() + "」已保存，共 "
+                                        + template.getItemCount() + " 条任务分配");
+                        loadData();
+                    },
+                    error -> DialogUtils.showError("保存失败", "保存任务预分配失败，请重试"));
+        });
+    }
+
+    @FXML
+    private void onApplyTemplate() {
+        FxUtils.runAsync(taskTemplateService::list, templates -> {
+            if (templates == null || templates.isEmpty()) {
+                DialogUtils.showInfo("暂无预分配", "先选中任务并点「存为预分配」创建预分配");
+                return;
+            }
+            Dialog<Integer> dialog = new Dialog<>();
+            dialog.setTitle("按预分配分配任务");
+            dialog.setHeaderText("选择一个预分配，填写新的任务日期，系统会一次性生成全部任务");
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+            java.net.URL css = getClass().getResource("/css/chinan.css");
+            if (css != null) {
+                dialog.getDialogPane().getStylesheets().add(css.toExternalForm());
+            }
+
+            ComboBox<net.alan.jupiter.domain.model.TaskTemplate> combo = new ComboBox<>();
+            combo.getItems().setAll(templates);
+            combo.setMaxWidth(Double.MAX_VALUE);
+            combo.setCellFactory(list -> new ListCell<>() {
+                @Override
+                protected void updateItem(net.alan.jupiter.domain.model.TaskTemplate item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? "" : item.getName()
+                            + "（" + item.getItemCount() + " 条任务）");
+                }
+            });
+            combo.setButtonCell(new ListCell<>() {
+                @Override
+                protected void updateItem(net.alan.jupiter.domain.model.TaskTemplate item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? "" : item.getName()
+                            + "（" + item.getItemCount() + " 条任务）");
+                }
+            });
+            combo.getSelectionModel().selectFirst();
+            DatePicker datePicker = new DatePicker(LocalDate.now());
+
+            GridPane pane = new GridPane();
+            pane.setHgap(12);
+            pane.setVgap(12);
+            pane.setPadding(new Insets(8, 0, 4, 0));
+            Button deleteTemplateBtn = new Button("删除预分配");
+            deleteTemplateBtn.getStyleClass().add("btn-danger");
+            deleteTemplateBtn.setOnAction(event -> {
+                var current = combo.getValue();
+                if (current == null) {
+                    return;
+                }
+                if (!DialogUtils.showConfirm("删除预分配",
+                        "确定删除预分配「" + current.getName() + "」？")) {
+                    return;
+                }
+                FxUtils.runAsync(
+                        () -> {
+                            taskTemplateService.delete(current.getId());
+                            return null;
+                        },
+                        ok -> {
+                            combo.getItems().remove(current);
+                            if (combo.getItems().isEmpty()) {
+                                dialog.setResult(null);
+                                dialog.close();
+                            }
+                        },
+                        error -> DialogUtils.showError("删除失败", "预分配删除失败，请重试"));
+            });
+            HBox templateRow = new HBox(8, combo, deleteTemplateBtn);
+            HBox.setHgrow(combo, javafx.scene.layout.Priority.ALWAYS);
+            templateRow.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+            pane.add(new Label("任务预分配:"), 0, 0);
+            pane.add(templateRow, 1, 0);
+            pane.add(new Label("任务日期:"), 0, 1);
+            pane.add(datePicker, 1, 1);
+            dialog.getDialogPane().setContent(pane);
+
+            dialog.setResultConverter(button -> {
+                if (button != ButtonType.OK) {
+                    return null;
+                }
+                var template = combo.getValue();
+                if (template == null || datePicker.getValue() == null) {
+                    return null;
+                }
+                return taskTemplateService.apply(template.getId(), datePicker.getValue());
+            });
+
+            dialog.showAndWait().ifPresent(count -> {
+                loadData();
+                DialogUtils.showInfo("分配完成",
+                        "已按预分配生成 " + count + " 个任务");
+            });
+        });
     }
 
     private void loadFloors(ComboBox<Floor> floorCombo, String buildingId) {

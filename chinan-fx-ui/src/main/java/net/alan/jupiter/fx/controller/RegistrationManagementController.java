@@ -27,6 +27,7 @@ public class RegistrationManagementController {
 
     private final SystemConfigService configService;
     private final CounselorRegistrationRepository registrationRepo;
+    private final net.alan.jupiter.application.registration.RegistrationService registrationService;
 
     @FXML
     private ToggleButton registrationToggle;
@@ -77,23 +78,74 @@ public class RegistrationManagementController {
     private TableColumn<CounselorRegistration, String> colHSubmittedAt;
 
     @FXML
+    private TableColumn<CounselorRegistration, Void> colActions;
+
+    @FXML
     public void initialize() {
         pendingTable.setColumnResizePolicy(javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY);
         historyTable.setColumnResizePolicy(javafx.scene.control.TableView.CONSTRAINED_RESIZE_POLICY);
         setupPendingColumns();
         setupHistoryColumns();
+        setupActions();
         loadToggleState();
         loadPendingList();
         loadHistoryList();
+    }
+
+    private void setupActions() {
+        colActions.setCellFactory(column -> new TableCell<>() {
+            private final Button approveBtn = new Button("通过");
+            private final Button rejectBtn = new Button("拒绝");
+            private final HBox box = new HBox(6, approveBtn, rejectBtn);
+
+            {
+                approveBtn.getStyleClass().add("btn-primary");
+                rejectBtn.getStyleClass().add("btn-danger");
+                approveBtn.setOnAction(e -> handle(getTableView().getItems().get(getIndex()), true));
+                rejectBtn.setOnAction(e -> handle(getTableView().getItems().get(getIndex()), false));
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : box);
+            }
+        });
+    }
+
+    private void handle(CounselorRegistration reg, boolean approve) {
+        if (reg == null) return;
+        String action = approve ? "通过" : "拒绝";
+        if (!DialogUtils.showConfirm("确认" + action + "？",
+                "申请：" + reg.getName() + "（" + reg.getStudentNo() + "）\n"
+                        + (approve ? "通过后将创建工作人员账号。" : "拒绝后该申请不再处理。"))) {
+            return;
+        }
+        FxUtils.runAsync(
+                () -> {
+                    if (approve) {
+                        registrationService.approve(reg.getId(), "桌面端管理员");
+                    } else {
+                        registrationService.reject(reg.getId(), "桌面端管理员");
+                    }
+                    return null;
+                },
+                v -> {
+                    DialogUtils.showInfo("已处理", "申请已" + action);
+                    loadPendingList();
+                    loadHistoryList();
+                },
+                error -> DialogUtils.showError("处理失败", "请稍后再试")
+        );
     }
 
     private void setupPendingColumns() {
         colName.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getName() != null ? c.getValue().getName() : ""));
         colStudentNo.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().getStudentNo() != null ? c.getValue().getStudentNo() : ""));
+                c.getValue().getGender() != null ? c.getValue().getGender() : ""));
         colClassName.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().getClassName() != null ? c.getValue().getClassName() : ""));
+                c.getValue().getDepartment() != null ? c.getValue().getDepartment() : ""));
         colPhone.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getPhone() != null ? c.getValue().getPhone() : ""));
         colSubmittedAt.setCellValueFactory(c -> new SimpleStringProperty(
@@ -104,9 +156,9 @@ public class RegistrationManagementController {
         colHName.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getName() != null ? c.getValue().getName() : ""));
         colHStudentNo.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().getStudentNo() != null ? c.getValue().getStudentNo() : ""));
+                c.getValue().getGender() != null ? c.getValue().getGender() : ""));
         colHClassName.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().getClassName() != null ? c.getValue().getClassName() : ""));
+                c.getValue().getDepartment() != null ? c.getValue().getDepartment() : ""));
         colHPhone.setCellValueFactory(c -> new SimpleStringProperty(
                 c.getValue().getPhone() != null ? c.getValue().getPhone() : ""));
         colHStatus.setCellValueFactory(c -> new SimpleStringProperty(

@@ -43,6 +43,10 @@ public class Counselor {
 
     private String password;
 
+    /** 可还原的明文密码，仅用于管理员导出账户；登录仍校验上面的 BCrypt 哈希。 */
+    @Column(name = "password_plain")
+    private String passwordPlain;
+
     @Column(name = "role")
     private String role;
 

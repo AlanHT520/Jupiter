@@ -1,36 +1,42 @@
 package net.alan.jupiter.fx.controller;
 
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.TextArea;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import lombok.RequiredArgsConstructor;
-import net.alan.jupiter.application.report.ExportReportService;
+import net.alan.jupiter.application.counselor.ImportCounselorService;
 import net.alan.jupiter.application.report.ReportExportBundleService;
 import net.alan.jupiter.application.roster.ImportClassRosterService;
 import net.alan.jupiter.fx.util.DialogUtils;
 import net.alan.jupiter.fx.util.FxUtils;
-import net.alan.jupiter.domain.repository.TaskRepository;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
+/**
+ * 导入导出 · 命令面板：左侧命令、右侧事件日志与进度。
+ * 所有耗时操作都在后台线程，日志按 [HH:mm:ss] 追加。
+ */
 @Component
 @RequiredArgsConstructor
 public class ImportExportController {
 
-    private final ImportClassRosterService importClassRosterService;
-    private final ExportReportService exportReportService;
-    private final ReportExportBundleService reportExportBundleService;
-    private final TaskRepository taskRepository;
+    private static final DateTimeFormatter TS = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private static final FileChooser.ExtensionFilter EXCEL_FILTER =
             new FileChooser.ExtensionFilter("Excel 文件 (*.xlsx)", "*.xlsx");
+
+    private final ImportClassRosterService importClassRosterService;
+    private final ImportCounselorService importCounselorService;
+    private final ReportExportBundleService reportExportBundleService;
 
     @FXML
     private TextArea logArea;
@@ -39,45 +45,62 @@ public class ImportExportController {
     private Label statusLabel;
 
     @FXML
-    private Button importBtn;
+    private ProgressBar progressBar;
 
     @FXML
-    private Button exportBtn;
+    private Button cmdImportRoster;
+
+    @FXML
+    private Button cmdImportCounselors;
+
+    @FXML
+    private Button cmdExport;
 
     @FXML
     public void initialize() {
-        statusLabel.setText("就绪");
+        statusLabel.setText("● IDLE");
+        progressBar.setVisible(false);
+        event("SYS", "命令面板就绪，选择左侧命令开始");
     }
 
     @FXML
-    private void onImport() {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("选择花名册文件");
-        chooser.getExtensionFilters().add(EXCEL_FILTER);
-        File file = chooser.showOpenDialog(importBtn.getScene().getWindow());
+    private void onImportRoster() {
+        File file = chooseExcel("选择花名册文件", cmdImportRoster);
         if (file == null) return;
 
-        statusLabel.setText("正在导入花名册");
-        logArea.clear();
-
-        FxUtils.runAsync(() -> {
-            try {
-                byte[] data = Files.readAllBytes(file.toPath());
-                return importClassRosterService.importClassRoster(data, file.getName());
-            } catch (IOException e) {
-                throw new RuntimeException("读取文件失败，请重试", e);
-            }
+        run("IMPORT_ROSTER", "导入花名册 " + file.getName(), () -> {
+            byte[] data = readFile(file);
+            return importClassRosterService.importClassRoster(data, file.getName());
         }, result -> {
-            appendLog("===== 花名册导入结果 =====");
-                appendLog("文件名: " + file.getName());
-                appendLog("导入: " + result.getImported() + " 条");
-                appendLog("更新: " + result.getUpdated() + " 条");
-                appendLog("停用（未在本次名册中）: " + result.getDisabled() + " 条");
+            event("INFO", "imported=" + result.getImported()
+                    + " updated=" + result.getUpdated()
+                    + " disabled=" + result.getDisabled()
+                    + " skipped=" + result.getSkipped()
+                    + " classes=" + result.getClassMapped());
             if (!result.getErrors().isEmpty()) {
-                appendLog("错误: " + result.getErrors().size() + " 条");
-                result.getErrors().forEach(e -> appendLog("  - " + e));
+                event("WARN", "errors=" + result.getErrors().size());
+                result.getErrors().forEach(error -> event("WARN", error));
             }
-            statusLabel.setText("导入完成: 共 " + result.getImported() + " 条");
+            finish("● OK");
+        });
+    }
+
+    @FXML
+    private void onImportCounselors() {
+        File file = chooseExcel("选择工作人员名单文件", cmdImportCounselors);
+        if (file == null) return;
+
+        run("IMPORT_STAFF", "导入工作人员 " + file.getName(), () -> {
+            byte[] data = readFile(file);
+            return importCounselorService.importCounselors(data);
+        }, result -> {
+            event("INFO", "imported=" + result.getImported()
+                    + " updated=" + result.getUpdated()
+                    + " deleted=" + result.getDeleted());
+            if (!result.getErrors().isEmpty()) {
+                result.getErrors().forEach(error -> event("WARN", error));
+            }
+            finish("● OK");
         });
     }
 
@@ -85,35 +108,76 @@ public class ImportExportController {
     private void onExport() {
         DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle("选择导出目录");
-        File dir = chooser.showDialog(exportBtn.getScene().getWindow());
+        File dir = chooser.showDialog(cmdExport.getScene().getWindow());
         if (dir == null) return;
 
-        statusLabel.setText("正在生成全量报表（所有已完成任务）...");
-        logArea.clear();
-        appendLog("===== 报表导出开始 =====");
-        appendLog("导出所有已完成查寝任务的数据报表");
-
-        FxUtils.runAsync(() -> {
+        run("EXPORT_BUNDLE", "全量聚合导出 → " + dir.getAbsolutePath(), () -> {
             try {
-                ReportExportBundleService.ExportResult result =
-                        reportExportBundleService.exportBundle(null, dir.getAbsolutePath());
-                return result;
+                return reportExportBundleService.exportBundle(null, dir.getAbsolutePath());
             } catch (IOException e) {
                 throw new RuntimeException("导出失败，请重试", e);
             }
         }, result -> {
-            appendLog("===== 全量报表导出完成 =====");
-            appendLog("导出目录: " + result.outputDir());
-            statusLabel.setText("全量报表已导出");
+            event("INFO", "输出目录: " + result.outputDir());
             if (result.hasFailures()) {
-                DialogUtils.showWarn("导出完成（部分失败）",
-                        result.failureSummary());
+                event("WARN", result.failureSummary());
+                DialogUtils.showWarn("导出完成（部分失败）", result.failureSummary());
+            } else {
+                event("INFO", "导出完成，无失败项");
+                DialogUtils.showInfo("导出成功", "全量查寝报表已保存到:\n" + result.outputDir());
             }
-            DialogUtils.showInfo("导出成功", "全量查寝报表已保存到:\n" + result.outputDir());
+            finish("● OK");
         });
     }
 
-    private void appendLog(String text) {
-        logArea.appendText(text + "\n");
+    @FXML
+    private void onClearLog() {
+        logArea.clear();
+        event("SYS", "日志已清空");
+    }
+
+    /* ===================== 内部 ===================== */
+
+    private File chooseExcel(String title, Button anchor) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().add(EXCEL_FILTER);
+        return chooser.showOpenDialog(anchor.getScene().getWindow());
+    }
+
+    private byte[] readFile(File file) {
+        try {
+            return Files.readAllBytes(file.toPath());
+        } catch (IOException e) {
+            throw new RuntimeException("读取文件失败，请重试", e);
+        }
+    }
+
+    private <T> void run(String kind, String startMessage,
+                         java.util.function.Supplier<T> task,
+                         java.util.function.Consumer<T> onSuccess) {
+        event(kind, startMessage);
+        statusLabel.setText("● RUNNING");
+        progressBar.setVisible(true);
+        progressBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
+
+        FxUtils.runAsync(task, result -> {
+            progressBar.setVisible(false);
+            onSuccess.accept(result);
+        }, error -> {
+            progressBar.setVisible(false);
+            statusLabel.setText("● FAILED");
+            event("ERROR", error == null ? "未知错误" : String.valueOf(error.getMessage()));
+            DialogUtils.showError("命令执行失败", "操作失败，请查看日志或稍后重试");
+        });
+    }
+
+    private void finish(String status) {
+        statusLabel.setText(status);
+        event("DONE", "命令结束");
+    }
+
+    private void event(String kind, String message) {
+        logArea.appendText("[" + LocalTime.now().format(TS) + "] " + kind + "  " + message + "\n");
     }
 }

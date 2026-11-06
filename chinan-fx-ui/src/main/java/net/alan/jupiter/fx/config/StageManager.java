@@ -21,9 +21,9 @@ public class StageManager {
     private final ApplicationContext context;
 
     public void showMain(Stage stage) {
-        show(stage, "/fxml/main.fxml", "Chinan 寝室管理系统 · v-0.8.9", 1180, 760, true);
-        stage.setMinWidth(1000);
-        stage.setMinHeight(640);
+        show(stage, "/fxml/main.fxml", "寝安 · 宿舍查寝系统", 1280, 800, true);
+        stage.setMinWidth(1080);
+        stage.setMinHeight(680);
     }
 
     private void show(Stage stage, String fxml, String title, int w, int h, boolean resizable) {

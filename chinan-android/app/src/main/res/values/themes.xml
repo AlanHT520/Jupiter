@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ChinanKE" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        寝安 QIN'AN：暗色唯一主题。
+        使用暗色 NoActionBar 父主题，避免启动窗口白闪与跟随系统浅色；
+        windowBackground 与 QnPanelAlt (#0E1418) 一致，使状态栏区域与顶栏同色。
+    -->
+    <style name="Theme.ChinanKE" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">#FF0E1418</item>
+        <item name="android:statusBarColor">#FF0E1418</item>
+        <item name="android:navigationBarColor">#FF0B0E11</item>
+    </style>
 </resources>

@@ -520,7 +520,7 @@ public class ExcelExportHelper {
             // Row 0: 标题（合并 A-P）
             Row titleRow = sheet.createRow(0);
             Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue(data.getCollegeName() + data.getDate() + "晚查寝人数统计");
+            titleCell.setCellValue(data.getDate() + " 晚查寝数据汇总");
             titleCell.setCellStyle(titleStyle);
             sheet.addMergedRegion(new org.apache.poi.ss.util.CellRangeAddress(0, 0, 0, 15));
 
@@ -632,8 +632,7 @@ public class ExcelExportHelper {
 
             // Row 0: 顶部概要文字
             LeaveDetailData.HeaderSummary h = data.getHeader();
-            String titleText = data.getDate() + " " + data.getCollegeName()
-                    + "在籍人数情况：应到:" + h.getTotalStudents() + "人（男" + h.getMale()
+            String titleText = data.getDate() + " 在籍人数情况：应到:" + h.getTotalStudents() + "人（男" + h.getMale()
                     + "人，女" + h.getFemale() + "人）；实到:" + h.getActual()
                     + "人（男" + h.getActualMale() + "人，女" + h.getActualFemale()
                     + "人）";
@@ -745,10 +744,76 @@ public class ExcelExportHelper {
                 addLeaveDetailProofSheet(workbook, data, proofExportRoot);
             }
 
+            // 逐人请假明细：班级 / 班主任 / 学号 / 联系电话 / 起止日期 / 天数，便于直接发班群
+            // 样例只保留一张班级汇总表，不再追加逐人 Sheet
+
             return toByteArray(workbook);
         } catch (IOException e) {
             log.error("导出请假明细失败", e);
             throw new BizException(ErrorCode.EXPORT_ERROR, "导出请假明细失败，请稍后再试");
+        }
+    }
+
+    /**
+     * 逐人请假明细 Sheet：按班级展开每条请假/旷宿/走读/长期病假记录，
+     * 直接给班主任发班群使用（含联系电话、起止日期、天数）。
+     */
+    private void addLeaveStudentSheet(Workbook workbook, LeaveDetailData data, CellStyle headerStyle) {
+        Sheet sheet = workbook.createSheet("请假学生明细");
+        String[] headers = {"序号", "班级", "班主任", "姓名", "学号", "性别",
+                "联系电话", "状态", "开始日期", "结束日期", "天数", "证明", "备注"};
+        Row headerRow = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+            cell.setCellStyle(headerStyle);
+        }
+
+        int rowIdx = 1;
+        int seq = 0;
+        for (LeaveDetailData.ClassLeaveRow classRow : data.getRows()) {
+            for (LeaveDetailData.LeaveDetailItem item : classRow.getDetails()) {
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(++seq);
+                row.createCell(1).setCellValue(nullSafe(classRow.getClassName()));
+                row.createCell(2).setCellValue(nullSafe(classRow.getHeadTeacher()));
+                row.createCell(3).setCellValue(nullSafe(item.getStudentName()));
+                row.createCell(4).setCellValue(nullSafe(item.getStudentNo()));
+                row.createCell(5).setCellValue(nullSafe(item.getGender()));
+                row.createCell(6).setCellValue(nullSafe(item.getPhone()));
+                row.createCell(7).setCellValue(item.getStatus() != null ? item.getStatus().getLabel() : "");
+                row.createCell(8).setCellValue(nullSafe(item.getStartDate()));
+                row.createCell(9).setCellValue(nullSafe(item.getEndDate()));
+                if (item.getDays() != null) {
+                    row.createCell(10).setCellValue(item.getDays());
+                } else {
+                    row.createCell(10).setCellValue("");
+                }
+                row.createCell(11).setCellValue(proofFileName(item.getProofFile()));
+                row.createCell(12).setCellValue(nullSafe(item.getRemark()));
+            }
+        }
+
+        int[] widths = {6, 16, 10, 10, 14, 6, 14, 10, 12, 12, 6, 24, 20};
+        for (int i = 0; i < widths.length; i++) {
+            sheet.setColumnWidth(i, widths[i] * 256);
+        }
+        sheet.createFreezePane(0, 1);
+    }
+
+    private String nullSafe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String proofFileName(String proofFile) {
+        if (proofFile == null || proofFile.isBlank()) {
+            return "";
+        }
+        try {
+            Path path = Path.of(proofFile);
+            return path.getFileName() != null ? path.getFileName().toString() : proofFile;
+        } catch (Exception e) {
+            return proofFile;
         }
     }
 

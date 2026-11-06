@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.alan.jupiter.tcp.handler.AuthHandler;
+import net.alan.jupiter.tcp.handler.ChangePasswordHandler;
 import net.alan.jupiter.tcp.handler.ProofHandler;
 import net.alan.jupiter.tcp.handler.RegistrationHandler;
 import net.alan.jupiter.tcp.handler.RegistrationStatusHandler;
@@ -25,6 +26,7 @@ public class TcpDispatcher {
     private final ProofHandler proofHandler;
     private final RegistrationStatusHandler registrationStatusHandler;
     private final RegistrationHandler registrationHandler;
+    private final ChangePasswordHandler changePasswordHandler;
 
     public TcpMessage dispatch(TcpMessage request) {
         String type = request.getType();
@@ -63,6 +65,7 @@ public class TcpDispatcher {
             case "DELETE_PROOF" -> proofHandler.handleDelete(requestId, payload);
             case "GET_REGISTRATION_STATUS" -> registrationStatusHandler.handle(requestId, payload);
             case "REGISTER" -> registrationHandler.handle(requestId, payload);
+            case "CHANGE_PASSWORD" -> changePasswordHandler.handle(requestId, payload);
             default -> error(requestId, "未知消息类型: " + type);
         };
     }

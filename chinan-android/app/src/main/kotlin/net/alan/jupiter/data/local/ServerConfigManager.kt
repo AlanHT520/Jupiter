@@ -17,9 +17,9 @@ class ServerConfigManager @Inject constructor(
         private val KEY_PORT = stringPreferencesKey("server_port")
     }
 
-    // 默认值不写死任何公网地址；端口与后端 TCP 默认端口（Chinan.tcp.port，缺省 9090）保持一致
-    suspend fun getHost(): String = dataStore.data.first()[KEY_HOST] ?: ""
-    suspend fun getPort(): String = dataStore.data.first()[KEY_PORT] ?: "9090"
+    // 默认连接比赛/校内演示服务器；用户仍可在登录页「服务器配置」中改回自己的地址
+    suspend fun getHost(): String = dataStore.data.first()[KEY_HOST] ?: "218.12.120.170"
+    suspend fun getPort(): String = dataStore.data.first()[KEY_PORT] ?: "49749"
     suspend fun getBaseUrl(): String {
         val host = getHost()
         if (host.isBlank()) return ""

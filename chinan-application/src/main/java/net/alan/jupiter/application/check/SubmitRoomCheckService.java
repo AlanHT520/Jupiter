@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SubmitRoomCheckService {
 
+    /** check_record.client_op_id 的列宽，与迁移脚本保持一致。 */
+    private static final int CLIENT_OP_ID_MAX_LENGTH = 64;
+
     private final CheckRecordRepository checkRecordRepository;
     private final RoomRepository roomRepository;
     private final StudentRepository studentRepository;
@@ -38,13 +41,79 @@ public class SubmitRoomCheckService {
     /**
      * 提交单个房间的查寝结果。
      * 验证后在一个写事务中完成持久化，避免长时间占用连接。
+     * 不带客户端幂等键的旧签名，行为与历史版本完全一致。
+     *
+     * @return 本次落库（或幂等命中）的查寝记录
      */
     @Transactional
-    public void submitRoomCheck(String taskId, String roomId, List<StudentCheckItem> checkItems,
-                                 String submittedBy) {
-        SubmitContext ctx = validateAndPrepare(taskId, roomId, checkItems, submittedBy);
+    public List<CheckRecord> submitRoomCheck(String taskId, String roomId,
+                                             List<StudentCheckItem> checkItems,
+                                             String submittedBy) {
+        return submitRoomCheck(taskId, roomId, checkItems, submittedBy, null);
+    }
+
+    /**
+     * 提交单个房间的查寝结果（带客户端幂等键）。
+     * <p>
+     * {@code clientOpId} 为空时与旧签名完全相同；非空且服务端已存在同 clientOpId 的记录时，
+     * 直接返回首次落库的记录，不重复写入、不再发布审计事件（离线补交重试幂等）。
+     * 同一房间用<em>不同</em> clientOpId 提交仍是覆盖语义，审计逻辑保持不变。
+     */
+    @Transactional
+    public List<CheckRecord> submitRoomCheck(String taskId, String roomId,
+                                             List<StudentCheckItem> checkItems,
+                                             String submittedBy, String clientOpId) {
+        String opId = normalizeClientOpId(clientOpId);
+        if (opId != null) {
+            List<CheckRecord> replayed = checkRecordRepository.findByClientOpId(opId);
+            if (!replayed.isEmpty()) {
+                assertSameTarget(replayed, taskId, roomId);
+                log.info("查寝提交幂等命中，返回首次结果: clientOpId={}, taskId={}, roomId={}, records={}",
+                        opId, taskId, roomId, replayed.size());
+                return replayed;
+            }
+        }
+
+        SubmitContext ctx = validateAndPrepare(taskId, roomId, checkItems, submittedBy, opId);
         persistRoomCheck(ctx);
         updateTaskCompletionStatus(ctx.taskId);
+        return ctx.toSave;
+    }
+
+    /**
+     * 幂等键归一化：空白视为未携带（兼容旧客户端），超长直接拒绝，
+     * 避免被数据库列宽截断后产生两个不同的 op 命中同一行。
+     */
+    private String normalizeClientOpId(String clientOpId) {
+        if (clientOpId == null) {
+            return null;
+        }
+        String trimmed = clientOpId.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() > CLIENT_OP_ID_MAX_LENGTH) {
+            throw new BizException(ErrorCode.BAD_REQUEST,
+                    "clientOpId 长度不能超过 " + CLIENT_OP_ID_MAX_LENGTH + " 个字符");
+        }
+        return trimmed;
+    }
+
+    /**
+     * 幂等重放时校验首次提交与本次请求指向同一个任务/房间，
+     * 防止错误复用 clientOpId 读到其他任务的数据。只比较 ID，不触发懒加载。
+     */
+    private void assertSameTarget(List<CheckRecord> records, String taskId, String roomId) {
+        for (CheckRecord record : records) {
+            boolean sameTask = record.getTask() != null
+                    && Objects.equals(taskId, record.getTask().getId());
+            boolean sameRoom = record.getRoom() != null
+                    && Objects.equals(roomId, record.getRoom().getId());
+            if (!sameTask || !sameRoom) {
+                throw new BizException(ErrorCode.CONFLICT,
+                        "clientOpId 已被其他任务或房间的提交占用，请重新生成");
+            }
+        }
     }
 
     /**
@@ -88,7 +157,7 @@ public class SubmitRoomCheckService {
      */
     private SubmitContext validateAndPrepare(String taskId, String roomId,
                                               List<StudentCheckItem> checkItems,
-                                              String submittedBy) {
+                                              String submittedBy, String clientOpId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new BizException(ErrorCode.TASK_NOT_FOUND));
         Room room = roomRepository.findById(roomId)
@@ -181,6 +250,11 @@ public class SubmitRoomCheckService {
         }
 
         List<CheckRecord> toSave = new ArrayList<>();
+        // submittedAt 是服务器接收时间（本次提交统一取一个时刻），客户端不可伪造
+        LocalDateTime submittedAt = LocalDateTime.now();
+        // 迟到判定：taskDate 不可变，只与服务器接收日期比较；taskDate 缺失时不标记迟到
+        boolean late = task.getTaskDate() != null
+                && task.getTaskDate().isBefore(submittedAt.toLocalDate());
         for (StudentCheckItem item : checkItems) {
             Student student = studentCache.get(item.getStudentId());
             String statusSource = item.getStatusSource() != null
@@ -204,7 +278,12 @@ public class SubmitRoomCheckService {
             record.setStatusSource(statusSource);
             record.setRemark(item.getRemark());
             record.setProofFile(normalizeProofFile(item.getProofFile(), taskId, item.getStudentId()));
-            record.setSubmittedAt(LocalDateTime.now());
+            record.setSubmittedAt(submittedAt);
+            if (clientOpId != null) {
+                // 覆盖提交时更新为本次的幂等键；旧客户端不带 opId 时保留原值，避免丢失去重依据
+                record.setClientOpId(clientOpId);
+            }
+            record.setLate(late);
 
             toSave.add(record);
         }

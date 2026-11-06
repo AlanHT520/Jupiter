@@ -19,10 +19,13 @@ import net.alan.jupiter.domain.service.CheckRuleService;
 import net.alan.jupiter.tcp.model.TcpMessage;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -134,6 +137,8 @@ public class RoomHandler implements TcpHandler {
             if (userId == null) return authError(requestId);
 
             String taskId = payload.get("taskId").asText();
+            // 客户端幂等键（离线补交），缺省时保持 null，行为与旧客户端一致
+            String clientOpId = textOrNull(payload, "clientOpId");
             JsonNode students = payload.get("students");
             List<SubmitRoomCheckService.StudentCheckItem> items = new ArrayList<>();
             if (students != null) {
@@ -164,9 +169,11 @@ public class RoomHandler implements TcpHandler {
                 }
             }
 
-            submitRoomCheckService.submitRoomCheck(taskId, roomId, items, userId);
+            List<CheckRecord> records = submitRoomCheckService
+                    .submitRoomCheck(taskId, roomId, items, userId, clientOpId);
 
-            return TcpMessage.response(requestId, 200, "提交成功", null);
+            return TcpMessage.response(requestId, 200, "提交成功",
+                    buildSubmitResult(taskId, roomId, clientOpId, records));
         } catch (BizException e) {
             log.warn("TCP提交查寝失败(业务异常): {}", e.getMessage());
             return TcpMessage.response(requestId, 400, e.getMessage(), null);
@@ -176,9 +183,70 @@ public class RoomHandler implements TcpHandler {
         }
     }
 
+    /**
+     * 提交响应：回显幂等键，并给出服务器接收时间与迟到标记（离线补交由服务端判定）。
+     * late 为 true 表示任务日期早于本次提交的自然日；records 为本次落库或幂等命中的记录明细。
+     */
+    private ObjectNode buildSubmitResult(String taskId, String roomId, String clientOpId,
+                                         List<CheckRecord> records) {
+        ObjectNode data = mapper.createObjectNode();
+        data.put("taskId", taskId);
+        data.put("roomId", roomId);
+        if (clientOpId != null) {
+            data.put("clientOpId", clientOpId);
+        }
+
+        LocalDateTime submittedAt = records == null ? null : records.stream()
+                .map(CheckRecord::getSubmittedAt)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+        if (submittedAt != null) {
+            data.put("submittedAt", submittedAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+        }
+        data.put("late", records != null && records.stream()
+                .anyMatch(r -> Boolean.TRUE.equals(r.getLate())));
+
+        ArrayNode recordsNode = mapper.createArrayNode();
+        if (records != null) {
+            for (CheckRecord record : records) {
+                ObjectNode node = mapper.createObjectNode();
+                node.put("recordId", record.getId());
+                if (record.getStudent() != null) {
+                    node.put("studentId", record.getStudent().getId());
+                }
+                node.put("studentNo", record.getStudentNo());
+                if (record.getCheckStatus() != null) {
+                    node.put("checkStatus", record.getCheckStatus().name());
+                    node.put("statusCode", record.getCheckStatus().getCode());
+                }
+                if (record.getClientOpId() != null) {
+                    node.put("clientOpId", record.getClientOpId());
+                }
+                node.put("late", Boolean.TRUE.equals(record.getLate()));
+                if (record.getSubmittedAt() != null) {
+                    node.put("submittedAt",
+                            record.getSubmittedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
+                }
+                recordsNode.add(node);
+            }
+        }
+        data.set("records", recordsNode);
+        return data;
+    }
+
     private String requireUserId(JsonNode payload, String requestId) {
         if (payload == null || !payload.has("token") || payload.get("token").isNull()) return null;
         return tcpAuthHelper.validateAndGetUserId(payload.get("token").asText());
+    }
+
+    /** 读取可选字符串字段：缺失、null 或空白都返回 null。 */
+    private static String textOrNull(JsonNode payload, String field) {
+        if (payload == null || !payload.has(field) || payload.get(field).isNull()) {
+            return null;
+        }
+        String value = payload.get(field).asText();
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static Set<String> parseRoomNumbers(String roomNumbers) {

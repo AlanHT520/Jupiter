@@ -10,15 +10,16 @@
             fx:controller="net.alan.jupiter.fx.controller.BuildingController"
             styleClass="root">
 
-    <VBox spacing="20">
-        <padding><Insets top="26" right="28" bottom="28" left="28"/></padding>
-
-        <HBox alignment="CENTER_LEFT">
-            <Label text="各宿舍楼房间与学生规模" styleClass="section-title"/>
+    <VBox spacing="0">
+        <HBox alignment="CENTER_LEFT" styleClass="toolbar">
+            <Label text="BUILDINGS" styleClass="section-label"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label text="数据来自名册导入" styleClass="caption"/>
         </HBox>
 
-        <FlowPane fx:id="buildingCards" hgap="16" vgap="16"/>
+        <VBox>
+            <padding><Insets top="16" right="18" bottom="18" left="18"/></padding>
+            <FlowPane fx:id="buildingCards" hgap="12" vgap="12"/>
+        </VBox>
     </VBox>
 </ScrollPane>

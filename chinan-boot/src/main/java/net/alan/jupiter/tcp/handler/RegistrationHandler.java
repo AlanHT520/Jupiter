@@ -27,19 +27,20 @@ public class RegistrationHandler implements TcpHandler {
     public TcpMessage handle(String requestId, JsonNode payload) {
         try {
             String name = payload.get("name").asText();
-            String studentNo = payload.get("studentNo").asText();
-            String className = payload.get("className").asText();
+            String gender = payload.has("gender") ? payload.get("gender").asText() : "";
             String phone = payload.has("phone") ? payload.get("phone").asText() : "";
+            String department = payload.has("department") ? payload.get("department").asText() : "";
+            String className = payload.has("className") ? payload.get("className").asText() : "";
             String password = payload.get("password").asText();
 
-            if (name.isBlank() || studentNo.isBlank() ||
-                    className.isBlank() || password.isBlank()) {
+            if (name.isBlank() || phone.isBlank() || className.isBlank()
+                    || department.isBlank() || password.isBlank()) {
                 return TcpMessage.response(requestId == null ? "" : requestId,
-                        400, "请填写所有必填字段", null);
+                        400, "请填写姓名、手机号、班级、部门和密码", null);
             }
 
-            registrationService.submit(name.trim(), studentNo.trim(),
-                    className.trim(), phone.trim(), password);
+            registrationService.submit(name.trim(), gender.trim(), phone.trim(),
+                    department.trim(), className.trim(), password);
 
             ObjectNode data = mapper.createObjectNode();
             data.put("message", "注册申请已提交，请等待管理员审核");

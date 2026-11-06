@@ -46,8 +46,8 @@ public class CounselorManagementService {
         if (username == null || username.isBlank()) {
             throw new BizException(ErrorCode.BAD_REQUEST, "登录账号不能为空");
         }
-        if (password == null || password.length() < 6) {
-            throw new BizException(ErrorCode.BAD_REQUEST, "登录密码至少 6 位");
+        if (password == null || password.length() < 4) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "登录密码至少 4 位");
         }
         String normalizedUsername = username.trim();
         if (counselorRepository.existsByUsername(normalizedUsername)) {
@@ -62,6 +62,7 @@ public class CounselorManagementService {
                 .name(name.trim())
                 .username(normalizedUsername)
                 .password(passwordEncoder.encode(password))
+                .passwordPlain(password)
                 .phone(normalizedPhone)
                 .role("COUNSELOR")
                 .isActive(true)
@@ -93,17 +94,22 @@ public class CounselorManagementService {
         Counselor counselor = counselorRepository.findById(id)
                 .orElseThrow(() -> new BizException(ErrorCode.NOT_FOUND, "查宿者不存在"));
         counselor.setPassword(passwordEncoder.encode(newPassword));
+        counselor.setPasswordPlain(newPassword);
         counselor.setTokenVersion(
                 (counselor.getTokenVersion() != null ? counselor.getTokenVersion() : 0L) + 1);
         counselorRepository.save(counselor);
     }
 
+    /**
+     * 导出工作人员账户：直接导出建档/重置时保存的明文密码，不再重置。
+     * 仅早期只存了 BCrypt 哈希的旧账号无法还原，会在该列标注提示。
+     */
     @Transactional(readOnly = true)
     public byte[] exportAccounts(List<Counselor> counselors) {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("工作人员账户");
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"姓名", "用户名", "学号", "班级", "性别", "手机号", "部门", "状态", "密码"};
+            String[] headers = {"姓名", "用户名", "学号", "班级", "性别", "手机号", "部门", "状态", "角色", "明文密码"};
             for (int i = 0; i < headers.length; i++) {
                 headerRow.createCell(i).setCellValue(headers[i]);
             }
@@ -119,7 +125,14 @@ public class CounselorManagementService {
                 row.createCell(5).setCellValue(c.getPhone() != null ? c.getPhone() : "");
                 row.createCell(6).setCellValue(c.getDepartment() != null ? c.getDepartment() : "");
                 row.createCell(7).setCellValue(Boolean.TRUE.equals(c.getIsActive()) ? "启用" : "禁用");
-                row.createCell(8).setCellValue(c.getPassword() != null ? c.getPassword() : "");
+
+                boolean isAdmin = "ADMIN".equalsIgnoreCase(c.getRole());
+                row.createCell(8).setCellValue(isAdmin ? "管理员" : "工作人员");
+                if (c.getPasswordPlain() != null && !c.getPasswordPlain().isBlank()) {
+                    row.createCell(9).setCellValue(c.getPasswordPlain());
+                } else {
+                    row.createCell(9).setCellValue("（旧账号不可还原，请重置密码后再导出）");
+                }
             }
 
             for (int i = 0; i < headers.length; i++) {

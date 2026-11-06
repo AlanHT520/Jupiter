@@ -39,6 +39,9 @@ public class TcpServer {
     private ExecutorService bizPool;
     private final AtomicBoolean running = new AtomicBoolean(false);
 
+    /** 当前活跃连接，仅用于桌面状态栏与系统配置页展示。 */
+    private final java.util.Set<Socket> activeClients = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
     @PostConstruct
     public void start() {
         if (!enabled) {
@@ -71,11 +74,19 @@ public class TcpServer {
                 try {
                     Socket client = serverSocket.accept();
                     log.debug("新客户端连接: {}", client.getInetAddress());
+                    activeClients.add(client);
                     try {
-                        ioPool.submit(() -> handleClient(client));
+                        ioPool.submit(() -> {
+                            try {
+                                handleClient(client);
+                            } finally {
+                                activeClients.remove(client);
+                            }
+                        });
                     } catch (java.util.concurrent.RejectedExecutionException rejected) {
                         // 线程池满时只拒绝该连接，绝不能让 accept 循环退出
                         log.warn("TCP 连接数已达上限，拒绝新连接: {}", client.getInetAddress());
+                        activeClients.remove(client);
                         closeQuietly(client);
                     }
                 } catch (IOException e) {
@@ -194,5 +205,10 @@ public class TcpServer {
 
     public int getPort() {
         return port;
+    }
+
+    /** 当前活跃 TCP 连接数（桌面状态栏 / 系统配置页只读展示）。 */
+    public int getActiveConnections() {
+        return activeClients.size();
     }
 }

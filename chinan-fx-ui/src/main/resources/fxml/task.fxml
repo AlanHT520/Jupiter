@@ -11,14 +11,17 @@
       styleClass="root">
 
     <HBox alignment="CENTER_LEFT" spacing="8" styleClass="toolbar">
+        <Label text="TASKS" styleClass="section-label"/>
         <Region HBox.hgrow="ALWAYS"/>
         <Button text="刷新" onAction="#onRefresh" styleClass="btn-ghost"/>
         <Button text="一键清除已完成" onAction="#onClearCompleted" styleClass="btn-danger"/>
-        <Button text="＋ 创建任务" onAction="#onCreateTask" styleClass="btn-primary"/>
+        <Button text="存为预分配" onAction="#onSaveTemplate" styleClass="btn-ghost"/>
+        <Button text="按预分配分配" onAction="#onApplyTemplate" styleClass="btn-ghost"/>
+        <Button text="+ 创建任务" onAction="#onCreateTask" styleClass="btn-primary"/>
     </HBox>
 
     <VBox VBox.vgrow="ALWAYS">
-        <padding><Insets top="18" right="22" bottom="10" left="22"/></padding>
+        <padding><Insets top="14" right="18" bottom="10" left="18"/></padding>
         <TableView fx:id="taskTable" VBox.vgrow="ALWAYS">
             <placeholder>
                 <Label text="暂无查寝任务，点击右上角「创建任务」开始"/>

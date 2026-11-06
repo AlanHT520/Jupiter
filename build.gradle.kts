@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "net.alan.jupiter"
-version = "v-0.8.5"
+version = "v-0.8.9"
 
 allprojects {
     repositories {
