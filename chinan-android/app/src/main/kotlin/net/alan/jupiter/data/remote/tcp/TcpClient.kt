@@ -12,17 +12,19 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import net.alan.jupiter.data.local.ServerConfigManager
+import net.alan.jupiter.data.sync.NetworkMonitor
 import net.alan.jupiter.data.remote.dto.*
 import java.io.IOException
 
 class AuthExpiredException(message: String) : IOException(message)
 
 class TcpClient(
-    serverConfigManager: ServerConfigManager
+    serverConfigManager: ServerConfigManager,
+    private val networkMonitor: NetworkMonitor
 ) {
     private val connection: TcpConnection = TcpConnection {
         val host = serverConfigManager.getHost()
-        val port = serverConfigManager.getPort().toIntOrNull() ?: 9090
+        val port = serverConfigManager.getPort().toIntOrNull() ?: ServerConfigManager.DEFAULT_PORT.toInt()
         host to port
     }
 
@@ -33,16 +35,20 @@ class TcpClient(
     }
 
     private suspend fun send(type: String, payload: JsonObject? = null): JsonObject {
+        // 没网就别去挨 10s 的连接超时：立刻失败，界面可以马上显示本地缓存
+        if (!networkMonitor.isOnline()) {
+            throw IOException("当前无网络，请检查网络设置")
+        }
         var lastException: Exception? = null
-        repeat(3) { attempt ->
+        repeat(MAX_ATTEMPTS) { attempt ->
             try {
                 return sendOnConnection(type, payload)
             } catch (e: AuthExpiredException) {
                 throw e
             } catch (e: IOException) {
                 lastException = e
-                if (attempt < 2) {
-                    delay(100L * (attempt + 1))
+                if (attempt < MAX_ATTEMPTS - 1) {
+                    delay(150L * (attempt + 1))
                 }
             }
         }
@@ -212,6 +218,9 @@ class TcpClient(
     }
 
     companion object {
+        /** 单次请求最多尝试几次：配合 15s 请求超时，最坏 30s 内一定给出结果。 */
+        private const val MAX_ATTEMPTS = 2
+
         private fun JsonObject.extract(key: String): String =
             this[key]?.jsonPrimitive?.content ?: ""
 

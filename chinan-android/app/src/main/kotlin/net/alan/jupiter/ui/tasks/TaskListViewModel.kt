@@ -73,27 +73,32 @@ class TaskListViewModel @Inject constructor(
                     error = null
                 )
             }
-            when (val result = repository.getTasks()) {
-                is Resource.Success -> _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        error = null,
-                        cacheOnly = false
-                    )
+            try {
+                when (val result = repository.getTasks()) {
+                    is Resource.Success -> _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = null,
+                            cacheOnly = false
+                        )
+                    }
+                    is Resource.Error -> _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = result.message,
+                            cacheOnly = it.tasks.isNotEmpty()
+                        )
+                    }
+                    is Resource.Unauthorized -> _uiState.update {
+                        it.copy(isLoading = false, isRefreshing = false, needsReauth = true)
+                    }
+                    is Resource.Loading -> {}
                 }
-                is Resource.Error -> _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                        error = result.message,
-                        cacheOnly = it.tasks.isNotEmpty()
-                    )
-                }
-                is Resource.Unauthorized -> _uiState.update {
-                    it.copy(isLoading = false, isRefreshing = false, needsReauth = true)
-                }
-                is Resource.Loading -> {}
+            } finally {
+                // 任何异常/取消都不能把「加载中」留在 true，否则刷新入口会永久失效
+                _uiState.update { it.copy(isLoading = false, isRefreshing = false) }
             }
         }
     }

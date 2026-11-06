@@ -7,95 +7,94 @@ import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.PersonOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.alan.jupiter.domain.model.CheckStatus
+import net.alan.jupiter.ui.components.QnAvatar
 import net.alan.jupiter.ui.components.QnCard
+import net.alan.jupiter.ui.components.QnChip
+import net.alan.jupiter.ui.components.QnDivider
 import net.alan.jupiter.ui.components.QnEmpty
-import net.alan.jupiter.ui.components.QnGhostButton
-import net.alan.jupiter.ui.components.QnMono
+import net.alan.jupiter.ui.components.QnNoticeCard
 import net.alan.jupiter.ui.components.QnPrimaryButton
-import net.alan.jupiter.ui.components.QnRadius
 import net.alan.jupiter.ui.components.QnScaffold
-import net.alan.jupiter.ui.components.QnStatus
-import net.alan.jupiter.ui.components.QnStatusTag
-import net.alan.jupiter.ui.components.QnTag
-import net.alan.jupiter.ui.theme.QnAccent
-import net.alan.jupiter.ui.theme.QnBg
-import net.alan.jupiter.ui.theme.QnLine
-import net.alan.jupiter.ui.theme.QnPanel
-import net.alan.jupiter.ui.theme.QnPanelAlt
-import net.alan.jupiter.ui.theme.QnText
-import net.alan.jupiter.ui.theme.QnTextDim
-import net.alan.jupiter.ui.theme.QnTextMuted
-import net.alan.jupiter.ui.theme.QnWarn
-import net.alan.jupiter.ui.theme.StatusFemale
-import net.alan.jupiter.ui.theme.StatusIntern
-import net.alan.jupiter.ui.theme.statusColor
+import net.alan.jupiter.ui.components.QnTextField
+import net.alan.jupiter.ui.components.QnTonalButton
+import net.alan.jupiter.ui.components.QnTopIcon
+import net.alan.jupiter.ui.theme.QnTone
+import net.alan.jupiter.ui.theme.statusTone
 import java.io.File
 import java.util.UUID
 
 /**
- * 房间查寝（/check/<building>/<room>）：学生卡 = QnCard + QnTag(状态)；
- * 状态选择沿用原 ModalBottomSheet 逻辑，改为暗色细线风格；
- * 底部提交栏常驻并显示 ● QUEUED N。
+ * 房间查寝（/tasks/{id}/rooms/{roomId}/{roomNumber}）。
+ *
+ * 学生卡 = 圆形头像位 + 姓名 / 床位 / 班级 + 状态 AssistChip；
+ * 点状态打开 ModalBottomSheet 单选（RadioButton），请假类状态展开拍照 / 本地导入；
+ * 底部常驻 SubmitBar；提交成功用结果卡 + Snackbar，不再有全屏呼吸动画。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,19 +105,19 @@ fun RoomCheckScreen(
     onBackClick: () -> Unit,
     onSubmitSuccess: () -> Unit,
     buildingName: String = "",
+    onOpenSync: (() -> Unit)? = null,
     viewModel: RoomCheckViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showStatusSheet by remember { mutableStateOf(false) }
     var statusPickerIndex by remember { mutableIntStateOf(-1) }
+    var resultDismissed by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val sheetState = rememberModalBottomSheetState()
     val context = LocalContext.current
-    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
     var cameraTargetIndex by remember { mutableIntStateOf(-1) }
     var galleryTargetIndex by remember { mutableIntStateOf(-1) }
-    var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
-    var showSuccessAnimation by remember { mutableStateOf(false) }
     val snackbarScope = rememberCoroutineScope()
 
     val cameraLauncher = rememberLauncherForActivityResult(
@@ -128,10 +127,7 @@ fun RoomCheckScreen(
             val path = pendingPhotoPath
             if (path != null) {
                 viewModel.updateProofPhoto(cameraTargetIndex, path)
-                // 同时保存到系统相册
-                Thread {
-                    saveToGallery(context, path)
-                }.start()
+                Thread { saveToGallery(context, path) }.start()
             }
         }
         pendingPhotoPath = null
@@ -151,7 +147,9 @@ fun RoomCheckScreen(
                     file.writeBytes(bytes)
                     viewModel.updateProofPhoto(galleryTargetIndex, file.absolutePath)
                 }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+                // 读取相册失败不影响已有照片
+            }
         }
         galleryTargetIndex = -1
     }
@@ -163,7 +161,6 @@ fun RoomCheckScreen(
             "${context.packageName}.fileprovider",
             file
         )
-        cameraUri = uri
         pendingPhotoPath = file.absolutePath
         val intent = android.content.Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).apply {
             putExtra(android.provider.MediaStore.EXTRA_OUTPUT, uri)
@@ -190,109 +187,84 @@ fun RoomCheckScreen(
 
     LaunchedEffect(roomId) { viewModel.loadRoom(taskId, roomId) }
 
-    // 监听错误：弹 Snackbar 并清空，避免重复触发
+    LaunchedEffect(uiState.submitSuccess) {
+        if (uiState.submitSuccess) resultDismissed = false
+    }
+
+    // 失败就地给出「去同步」，不用回设置里找
     LaunchedEffect(uiState.error) {
         val msg = uiState.error ?: return@LaunchedEffect
         viewModel.clearError()
-        snackbarHostState.showSnackbar(
+        val result = snackbarHostState.showSnackbar(
             message = msg,
-            duration = SnackbarDuration.Short
+            actionLabel = if (onOpenSync != null) "去同步" else null,
+            duration = SnackbarDuration.Long
         )
-    }
-
-    // 监听成功：展示完成动画，但不自动返回；由用户点「留在此页」或「返回房间列表」
-    LaunchedEffect(uiState.submitSuccess) {
-        if (uiState.submitSuccess) {
-            showSuccessAnimation = true
+        if (result == SnackbarResult.ActionPerformed) {
+            onOpenSync?.invoke()
         }
     }
 
     val dirtyCount = uiState.students.count { it.isDirty }
     val displayRoom = uiState.roomNumber.ifBlank { roomNumber }
-    val path = buildString {
-        append("/check/")
-        if (buildingName.isNotBlank()) {
-            append(buildingName)
-            append('/')
-        }
-        append(displayRoom)
-    }
+    val meta = listOfNotNull(
+        "${uiState.students.size} 人",
+        buildingName.takeIf { it.isNotBlank() }
+    ).joinToString(" · ")
 
-    val headerStatus = when {
-        uiState.isSubmitting -> QnStatus.QUEUED
-        uiState.queuedCount > 0 -> QnStatus.QUEUED
-        uiState.error != null -> QnStatus.FAILED
-        uiState.cacheOnly -> QnStatus.CACHED
-        dirtyCount > 0 -> QnStatus.QUEUED
-        uiState.isLoading && uiState.students.isEmpty() -> QnStatus.RUNNING
-        uiState.students.isEmpty() -> QnStatus.IDLE
-        else -> QnStatus.OK
-    }
-    val headerDetail = when {
-        uiState.queuedCount > 0 -> "${uiState.queuedCount}"
-        dirtyCount > 0 -> "$dirtyCount"
-        else -> null
+    val submitBar: (@Composable () -> Unit)? = if (uiState.students.isNotEmpty()) {
+        {
+            SubmitBar(
+                students = uiState.students.size,
+                dirtyCount = dirtyCount,
+                queuedCount = uiState.queuedCount,
+                isSubmitting = uiState.isSubmitting,
+                onSubmit = { viewModel.submitChecks(taskId, roomId) }
+            )
+        }
+    } else {
+        null
     }
 
     QnScaffold(
-        path = path,
-        status = headerStatus,
-        statusDetail = headerDetail,
+        title = "$displayRoom 房间",
         onBack = onBackClick,
         actions = {
-            IconButton(
-                onClick = { viewModel.loadRoom(taskId, roomId) },
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    Icons.Default.Refresh,
-                    contentDescription = "刷新",
-                    tint = QnTextMuted,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
+            QnTopIcon(
+                icon = Icons.Default.Refresh,
+                label = "刷新",
+                onClick = { viewModel.loadRoom(taskId, roomId) }
+            )
         },
-        bottomBar = {
-            if (uiState.students.isNotEmpty()) {
-                SubmitBar(
-                    students = uiState.students.size,
-                    dirtyCount = dirtyCount,
-                    queuedCount = uiState.queuedCount,
-                    isSubmitting = uiState.isSubmitting,
-                    enabled = uiState.students.isNotEmpty(),
-                    onSubmit = { viewModel.submitChecks(taskId, roomId) }
-                )
-            }
-        }
+        snackbarHostState = snackbarHostState,
+        bottomBar = submitBar
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            val listState = rememberSaveable(saver = LazyListState.Saver) {
-                LazyListState()
-            }
             when {
                 uiState.isLoading && uiState.students.isEmpty() -> {
                     Column(
-                        modifier = Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
                         CircularProgressIndicator(
-                            modifier = Modifier.size(34.dp),
-                            strokeWidth = 2.dp,
-                            color = QnAccent
+                            modifier = Modifier.size(36.dp),
+                            strokeWidth = 3.dp,
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                         Text(
-                            "// 正在加载学生信息",
-                            color = QnTextDim,
-                            fontFamily = QnMono,
-                            fontSize = 11.sp
+                            text = "正在加载学生名单…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+
                 uiState.students.isEmpty() && uiState.error == null -> {
                     QnEmpty(
                         icon = Icons.Outlined.PersonOff,
@@ -303,42 +275,118 @@ fun RoomCheckScreen(
                             .padding(24.dp)
                     )
                 }
+
                 else -> {
+                    val listState = rememberSaveable(saver = LazyListState.Saver) {
+                        LazyListState()
+                    }
                     LazyColumn(
                         state = listState,
                         contentPadding = PaddingValues(
-                            start = 12.dp, end = 12.dp,
-                            top = 10.dp, bottom = 14.dp
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 8.dp,
+                            bottom = 24.dp
                         ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        if (uiState.cacheOnly) {
-                            item(key = "cache_banner") {
-                                QnCard(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+                        item(key = "room_header") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = meta.ifBlank { "本房间" },
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "查完每位学生的状态后点底部「提交本间」",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                QnChip(
+                                    text = if (uiState.cacheOnly) "本地缓存" else "在线",
+                                    tone = if (uiState.cacheOnly) QnTone.Warning else QnTone.Success
+                                )
+                            }
+                        }
+
+                        if (uiState.submitSuccess && !resultDismissed) {
+                            item(key = "submit_result") {
+                                QnCard(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentPadding = PaddingValues(16.dp)
+                                ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        QnTag(text = "CACHED", color = QnTextMuted)
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(22.dp)
+                                        )
                                         Spacer(modifier = Modifier.width(10.dp))
-                                        Text(
-                                            text = "离线缓存：学生名单与上次查寝状态来自本地快照",
-                                            color = QnTextMuted,
-                                            fontSize = 11.sp,
-                                            maxLines = 2
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "本间查寝完成",
+                                                style = MaterialTheme.typography.titleSmall,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                            Text(
+                                                text = if (uiState.submitQueued) {
+                                                    "已保存到本机，联网后会自动上传"
+                                                } else {
+                                                    "已提交到服务器"
+                                                },
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        QnTonalButton(
+                                            text = "留在此页",
+                                            onClick = { resultDismissed = true },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        QnTonalButton(
+                                            text = "返回房间列表",
+                                            onClick = onSubmitSuccess,
+                                            modifier = Modifier.weight(1f)
                                         )
                                     }
                                 }
                             }
                         }
 
-                        if (dirtyCount > 0) {
-                            item(key = "summary") {
-                                DirtySummaryCard(
-                                    dirtyCount = dirtyCount,
-                                    totalCount = uiState.students.size
+                        if (uiState.cacheOnly) {
+                            item(key = "cache_banner") {
+                                QnNoticeCard(
+                                    title = "当前离线",
+                                    text = "学生名单与上次查寝状态来自本机快照，联网后会自动刷新",
+                                    tone = QnTone.Warning
                                 )
                             }
                         }
 
-                        itemsIndexed(uiState.students, key = { _, sws -> sws.student.id }) { index, sws ->
+                        if (dirtyCount > 0) {
+                            item(key = "dirty_banner") {
+                                QnNoticeCard(
+                                    text = "本间已修改 $dirtyCount 人，提交前会自动保存到本机。",
+                                    tone = QnTone.Warning
+                                )
+                            }
+                        }
+
+                        itemsIndexed(
+                            items = uiState.students,
+                            key = { _, sws -> sws.student.id }
+                        ) { index, sws ->
                             StudentCard(
                                 studentWithStatus = sws,
                                 onStatusClick = {
@@ -355,7 +403,9 @@ fun RoomCheckScreen(
                                     ) {
                                         launchCameraIntent()
                                     } else {
-                                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                                        cameraPermissionLauncher.launch(
+                                            android.Manifest.permission.CAMERA
+                                        )
                                     }
                                 },
                                 onPickFromGallery = {
@@ -367,114 +417,6 @@ fun RoomCheckScreen(
                         }
                     }
                 }
-            }
-
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(12.dp)
-            ) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    containerColor = QnPanel,
-                    contentColor = QnText,
-                    shape = QnRadius,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-            }
-        }
-    }
-
-    AnimatedVisibility(
-        visible = showSuccessAnimation,
-        enter = fadeIn(tween(180)) + scaleIn(initialScale = 0.92f, animationSpec = tween(220)),
-        exit = fadeOut(tween(150)) + scaleOut(targetScale = 0.96f, animationSpec = tween(150))
-    ) {
-        val pulse = rememberInfiniteTransition(label = "room-check-success")
-        val glowAlpha by pulse.animateFloat(
-            initialValue = 0.45f,
-            targetValue = 0f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1400, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "glow-alpha"
-        )
-        val glowScale by pulse.animateFloat(
-            initialValue = 0.85f,
-            targetValue = 1.35f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1400, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "glow-scale"
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(QnBg.copy(alpha = 0.92f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(28.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(136.dp)) {
-                    Box(
-                        modifier = Modifier
-                            .size(136.dp)
-                            .graphicsLayer {
-                                scaleX = glowScale
-                                scaleY = glowScale
-                                alpha = glowAlpha
-                            }
-                            .border(1.dp, QnAccent, CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(96.dp)
-                            .background(QnPanel, QnRadius)
-                            .border(1.dp, QnAccent, QnRadius),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            contentDescription = "提交成功",
-                            modifier = Modifier.size(46.dp),
-                            tint = QnAccent
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = "本间查寝完成",
-                    color = QnText,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "$displayRoom · " + if (uiState.submitQueued) "已保存本地，等待同步" else "已提交服务器",
-                    color = QnAccent,
-                    fontFamily = QnMono,
-                    fontSize = 11.sp
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                QnPrimaryButton(
-                    text = "留在此页继续查看",
-                    onClick = { showSuccessAnimation = false }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                QnGhostButton(
-                    text = "返回房间列表",
-                    onClick = {
-                        showSuccessAnimation = false
-                        onSubmitSuccess()
-                    }
-                )
             }
         }
     }
@@ -493,73 +435,46 @@ fun RoomCheckScreen(
     }
 }
 
-/** 底部提交栏：● QUEUED N（本地待上行）+ 提交按钮（原逻辑不变）。 */
+/** 底部常驻提交栏：中文人数 / 已修改 / 待同步 + 一个 filled 主操作。 */
 @Composable
 private fun SubmitBar(
     students: Int,
     dirtyCount: Int,
     queuedCount: Int,
     isSubmitting: Boolean,
-    enabled: Boolean,
     onSubmit: () -> Unit
 ) {
-    Surface(color = QnPanelAlt) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
         Column {
-            HorizontalDivider(color = QnLine, thickness = 1.dp)
+            QnDivider()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    QnStatusTag(
-                        status = if (queuedCount > 0 || dirtyCount > 0) {
-                            QnStatus.QUEUED
-                        } else {
-                            QnStatus.IDLE
-                        },
-                        detail = when {
-                            queuedCount > 0 -> "$queuedCount"
-                            dirtyCount > 0 -> "$dirtyCount"
-                            else -> null
-                        }
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
                     Text(
-                        text = "STUDENTS $students · EDITED $dirtyCount · QUEUED $queuedCount",
-                        color = QnTextDim,
-                        fontFamily = QnMono,
-                        fontSize = 9.sp,
-                        maxLines = 1
+                        text = "$students 人 · 已修改 $dirtyCount · 待同步 $queuedCount",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = if (dirtyCount > 0) "改完状态后点右侧提交" else "确认无误后提交本间",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 QnPrimaryButton(
-                    text = when {
-                        isSubmitting -> "提交中..."
-                        dirtyCount > 0 -> "提交 ($dirtyCount)"
-                        else -> "确认在寝"
-                    },
+                    text = if (isSubmitting) "提交中…" else "提交本间",
                     onClick = onSubmit,
-                    enabled = enabled && !isSubmitting
+                    enabled = !isSubmitting
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun DirtySummaryCard(dirtyCount: Int, totalCount: Int) {
-    QnCard(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            QnTag(text = "EDITED", color = QnWarn)
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "已修改 $dirtyCount/$totalCount 名学生",
-                color = QnTextMuted,
-                fontSize = 11.sp
-            )
         }
     }
 }
@@ -576,310 +491,203 @@ private fun StudentCard(
     val s = studentWithStatus.student
     val currentStatus = studentWithStatus.selectedStatus
     val isDirty = studentWithStatus.isDirty
-    val statusCol = currentStatus?.let { statusColor(it.code) } ?: QnTextDim
-    val studentInitial = if (s.name.isNotEmpty()) s.name.first().toString() else "?"
+    val tone = statusTone(currentStatus?.code)
+    val needsProof = currentStatus == CheckStatus.PERSONAL_LEAVE ||
+        currentStatus == CheckStatus.SICK_LEAVE
 
-    QnCard(
-        modifier = Modifier.clickable(
-            indication = null,
-            interactionSource = remember { MutableInteractionSource() }
-        ) { onStatusClick() },
-        contentPadding = PaddingValues(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(38.dp)
-                    .background(QnPanelAlt, QnRadius)
-                    .border(1.dp, QnLine, QnRadius),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = studentInitial,
-                    color = QnText,
-                    fontFamily = QnMono,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.width(10.dp))
-
+    QnCard(contentPadding = PaddingValues(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            QnAvatar(initial = s.name, size = 40.dp)
+            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = s.name,
-                        color = QnText,
-                        fontSize = 13.5.sp,
+                        text = s.name.ifBlank { "未命名" },
+                        style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1
                     )
                     if (s.gender.isNotBlank()) {
                         Spacer(modifier = Modifier.width(6.dp))
-                        QnTag(
+                        Text(
                             text = s.gender,
-                            color = if (s.gender == "男") StatusIntern else StatusFemale
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     if (isDirty) {
                         Spacer(modifier = Modifier.width(6.dp))
-                        QnTag(text = "EDITED", color = QnWarn)
+                        QnChip(text = "已修改", tone = QnTone.Warning)
                     }
                 }
-                Spacer(modifier = Modifier.height(3.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = listOfNotNull(
-                        "${s.bedNumber}床".takeIf { s.bedNumber.isNotBlank() },
+                        s.bedNumber.takeIf { it.isNotBlank() }?.let { "${it} 床" },
                         s.className?.takeIf { it.isNotBlank() }
-                    ).joinToString(" · "),
-                    color = QnTextDim,
-                    fontFamily = QnMono,
-                    fontSize = 9.5.sp,
+                    ).joinToString(" · ").ifBlank { "--" },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Surface(
-                shape = QnRadius,
-                color = QnPanelAlt,
-                border = BorderStroke(1.dp, QnLine),
-                modifier = Modifier.clickable(
-                    onClickLabel = "选择在寝状态"
-                ) { onStatusClick() }
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    QnTag(
-                        text = currentStatus?.label ?: "未设置",
-                        color = statusCol
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Icon(
-                        Icons.Default.UnfoldMore,
-                        contentDescription = null,
-                        tint = QnTextDim,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.width(10.dp))
+            QnChip(
+                text = currentStatus?.label ?: "未设置",
+                tone = tone,
+                onClick = onStatusClick
+            )
         }
 
         if (s.presetStatus != null && s.presetStatus != CheckStatus.PRESENT) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, QnLine, QnRadius)
-                    .padding(horizontal = 9.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "PRESET",
-                    color = QnTextDim,
-                    fontFamily = QnMono,
-                    fontSize = 9.sp
+                    text = "学籍预置",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                QnTag(
+                QnChip(
                     text = s.presetStatus.label,
-                    color = statusColor(s.presetStatus.code)
+                    tone = statusTone(s.presetStatus.code)
                 )
                 if (s.presetStatusFrom != null) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = s.presetStatusFrom,
-                        color = QnTextDim,
-                        fontFamily = QnMono,
-                        fontSize = 9.sp
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1
                     )
                 }
             }
         }
 
-        if (isDirty) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, QnLine, QnRadius)
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    Icons.Outlined.Edit,
-                    contentDescription = null,
-                    modifier = Modifier.size(14.dp),
-                    tint = QnTextDim
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                BasicTextField(
-                    value = studentWithStatus.remark,
-                    onValueChange = onRemarkChanged,
-                    modifier = Modifier.weight(1f),
-                    textStyle = androidx.compose.ui.text.TextStyle(
-                        color = QnText,
-                        fontFamily = QnMono,
-                        fontSize = 11.sp
-                    ),
-                    cursorBrush = SolidColor(QnAccent),
-                    decorationBox = { innerTextField ->
-                        if (studentWithStatus.remark.isEmpty()) {
-                            Text(
-                                "点击添加备注...",
-                                color = QnTextDim,
-                                fontFamily = QnMono,
-                                fontSize = 10.5.sp
+        // 备注默认不显示：只有「本次确实改过状态」的学生才出现备注入口。
+        // 已有备注（上次查寝留下的）仍然显示，否则用户看不到自己写过什么。
+        val showRemark = isDirty || studentWithStatus.remark.isNotBlank()
+        if (showRemark) {
+            Spacer(modifier = Modifier.height(10.dp))
+
+            val clearRemarkSlot: (@Composable () -> Unit)? =
+                if (studentWithStatus.remark.isNotEmpty()) {
+                    {
+                        IconButton(onClick = { onRemarkChanged("") }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = "清除备注",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                        innerTextField()
                     }
-                )
-                if (studentWithStatus.remark.isNotEmpty()) {
-                    IconButton(
-                        onClick = { onRemarkChanged("") },
-                        modifier = Modifier.size(30.dp)
-                    ) {
-                        Icon(
-                            Icons.Outlined.Close,
-                            contentDescription = "清除备注",
-                            modifier = Modifier.size(14.dp),
-                            tint = QnTextMuted
-                        )
-                    }
+                } else {
+                    null
                 }
-            }
+
+            QnTextField(
+                value = studentWithStatus.remark,
+                onValueChange = onRemarkChanged,
+                placeholder = "备注（选填）",
+                maxLines = 2,
+                singleLine = false,
+                trailingIcon = clearRemarkSlot
+            )
         }
 
         AnimatedVisibility(
-            visible = currentStatus == CheckStatus.PERSONAL_LEAVE ||
-                    currentStatus == CheckStatus.SICK_LEAVE,
+            visible = needsProof,
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
             Column {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 val localProof = studentWithStatus.proofLocalPath
-                val serverProof = studentWithStatus.proofFilePath
-                if (localProof != null || serverProof != null) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, QnLine, QnRadius)
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (localProof != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(localProof)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "证明照片",
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(QnRadius),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            // 服务端相对路径无法直接加载，显示"已上传"占位而不是破图
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(QnRadius)
-                                    .background(QnPanelAlt)
-                                    .border(1.dp, QnLine, QnRadius),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Outlined.CameraAlt,
-                                    contentDescription = "证明已上传",
-                                    modifier = Modifier.size(20.dp),
-                                    tint = QnTextDim
-                                )
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = if (localProof != null) "PROOF" else "PROOF (SERVER)",
-                                color = QnTextMuted,
-                                fontFamily = QnMono,
-                                fontSize = 9.5.sp
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = if (localProof != null) "点击右侧按钮重新拍摄" else "服务端已有证明，可重新拍摄替换",
-                                color = QnTextDim,
-                                fontSize = 10.sp,
-                                maxLines = 2
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (localProof != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(localProof)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "请假证明",
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(MaterialTheme.shapes.medium)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CameraAlt,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp)
                             )
                         }
-                        ProofIconButton(
-                            icon = Icons.Outlined.CameraAlt,
-                            label = "重拍证明照片",
-                            onClick = onTakePhoto
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        ProofIconButton(
-                            icon = Icons.Outlined.PhotoLibrary,
-                            label = "从相册选择证明照片",
-                            onClick = onPickFromGallery
-                        )
                     }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        QnGhostButton(
-                            text = "拍照",
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        QnTonalButton(
+                            text = if (localProof != null) "重新拍照" else "拍照",
                             onClick = onTakePhoto,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        QnGhostButton(
+                        Spacer(modifier = Modifier.height(6.dp))
+                        QnTonalButton(
                             text = "本地导入",
                             onClick = onPickFromGallery,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
+                if (localProof != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    RemoveProofRow(onClear = onClearPhoto)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "请假类状态建议拍照留证，证明会随记录一起上传。",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
 }
 
 @Composable
-private fun ProofIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = QnRadius,
-        color = QnPanelAlt,
-        border = BorderStroke(1.dp, QnLine)
+private fun RemoveProofRow(onClear: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClear),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(
-            onClick = onClick,
-            modifier = Modifier.size(36.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = QnText,
-                modifier = Modifier.size(16.dp)
-            )
-        }
+        Icon(
+            imageVector = Icons.Outlined.Close,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = "删除这张证明",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.error
+        )
     }
 }
 
+/** 状态选择：M3 单选列表（RadioButton），一行一个中文状态 + 说明。 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StatusPickerBottomSheet(
@@ -891,85 +699,58 @@ private fun StatusPickerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = QnRadius,
-        containerColor = QnPanel,
-        tonalElevation = 0.dp,
-        dragHandle = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Box(
-                    modifier = Modifier
-                        .width(32.dp)
-                        .height(2.dp)
-                        .background(QnLine)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "SELECT STATUS",
-                    color = QnTextDim,
-                    fontFamily = QnMono,
-                    fontSize = 9.5.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-            }
-        }
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 0.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp)
-                .padding(bottom = 26.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 24.dp)
         ) {
-            CheckStatus.entries.forEach { status ->
-                val col = statusColor(status.code)
-                val isSelected = status == currentStatus
-
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSelect(status) },
-                    shape = QnRadius,
-                    color = if (isSelected) QnPanelAlt else QnPanel,
-                    border = BorderStroke(
-                        1.dp,
-                        if (isSelected) col.copy(alpha = 0.65f) else QnLine
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 11.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        QnTag(text = status.label, color = col)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = statusDescription(status),
-                            color = QnTextDim,
-                            fontFamily = QnMono,
-                            fontSize = 9.5.sp,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (isSelected) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                tint = col,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
+            Text(
+                text = "选择查寝状态",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Spacer(modifier = Modifier.height(8.dp))
 
-            QnGhostButton(
+            CheckStatus.entries.forEach { status ->
+                val selected = status == currentStatus
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.medium)
+                        .clickable { onSelect(status) }
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = selected,
+                        onClick = { onSelect(status) }
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = status.label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = statusDescription(status),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                }
+                QnDivider()
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            QnTonalButton(
                 text = "取消",
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
@@ -988,18 +769,23 @@ private fun saveToGallery(context: android.content.Context, filePath: String) {
         if (!file.exists()) return
 
         val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME,
-                "Chinan_${System.currentTimeMillis()}.jpg")
+            put(
+                MediaStore.Images.Media.DISPLAY_NAME,
+                "Chinan_${System.currentTimeMillis()}.jpg"
+            )
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            put(MediaStore.Images.Media.RELATIVE_PATH,
-                Environment.DIRECTORY_PICTURES + "/Chinan")
+            put(
+                MediaStore.Images.Media.RELATIVE_PATH,
+                Environment.DIRECTORY_PICTURES + "/Chinan"
+            )
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 put(MediaStore.Images.Media.IS_PENDING, 1)
             }
         }
 
         val uri = context.contentResolver.insert(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
+        )
         uri?.let {
             context.contentResolver.openOutputStream(it)?.use { out ->
                 out.write(file.readBytes())

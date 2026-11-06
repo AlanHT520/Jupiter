@@ -1,6 +1,7 @@
 package net.alan.jupiter.data.repository
 
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withTimeoutOrNull
 import net.alan.jupiter.data.local.LocalStore
@@ -126,6 +127,8 @@ class ChinanRepository @Inject constructor(
     } catch (e: AuthExpiredException) {
         logout()
         Resource.Unauthorized(e.message ?: "数据变动，需要重新登录")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "获取任务列表失败", e)
         Resource.Error("加载失败，请点击刷新重试")
@@ -166,6 +169,8 @@ class ChinanRepository @Inject constructor(
     } catch (e: AuthExpiredException) {
         logout()
         Resource.Unauthorized(e.message ?: "数据变动，需要重新登录")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "获取任务概览失败", e)
         Resource.Error("加载失败，请返回重试")
@@ -201,6 +206,8 @@ class ChinanRepository @Inject constructor(
     } catch (e: AuthExpiredException) {
         logout()
         Resource.Unauthorized(e.message ?: "数据变动，需要重新登录")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "获取学生列表失败", e)
         Resource.Error("加载失败，请返回重试")
@@ -315,6 +322,8 @@ class ChinanRepository @Inject constructor(
     } catch (e: AuthExpiredException) {
         logout()
         Resource.Unauthorized(e.message ?: "数据变动，需要重新登录")
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "上传证明照片失败", e)
         Resource.Error("上传证明照片失败，请重试")
@@ -367,6 +376,8 @@ class ChinanRepository @Inject constructor(
 
     suspend fun getRegistrationStatus(): Resource<Boolean> = try {
         Resource.Success(tcpClient.getRegistrationStatus())
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "获取注册状态失败", e)
         Resource.Error("获取注册状态失败")
@@ -383,6 +394,8 @@ class ChinanRepository @Inject constructor(
         Resource.Success(
             tcpClient.submitRegistration(name, gender, phone, department, className, password)
         )
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Log.w(TAG, "提交注册申请失败", e)
         Resource.Error(e.message ?: "网络错误，请稍后重试")

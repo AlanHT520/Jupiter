@@ -1,8 +1,6 @@
 package net.alan.jupiter.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,360 +13,453 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import net.alan.jupiter.ui.theme.QnAccent
-import net.alan.jupiter.ui.theme.QnBg
-import net.alan.jupiter.ui.theme.QnDanger
-import net.alan.jupiter.ui.theme.QnLine
-import net.alan.jupiter.ui.theme.QnPanel
-import net.alan.jupiter.ui.theme.QnPanelAlt
-import net.alan.jupiter.ui.theme.QnText
-import net.alan.jupiter.ui.theme.QnTextDim
-import net.alan.jupiter.ui.theme.QnTextMuted
-import net.alan.jupiter.ui.theme.QnWarn
-import kotlin.math.roundToInt
-
-val QnRadius = RoundedCornerShape(2.dp)
-val QnMono = FontFamily.Monospace
-
-/** 机器状态：颜色只允许出现在状态灯与状态文字上。 */
-enum class QnStatus(val label: String, val color: Color) {
-    OK("● 正常", QnAccent),
-    SYNC("● 待同步", QnWarn),
-    QUEUED("● 待提交", QnWarn),
-    RUNNING("● 运行中", QnAccent),
-    OFFLINE("● 离线", QnDanger),
-    CACHED("● 缓存", QnTextMuted),
-    IDLE("● 空闲", QnTextDim),
-    FAILED("● 失败", QnDanger);
-
-    fun text(detail: String? = null): String = if (detail.isNullOrBlank()) label else "$label $detail"
-}
+import net.alan.jupiter.ui.theme.QnMono
+import net.alan.jupiter.ui.theme.QnTone
+import net.alan.jupiter.ui.theme.accent
+import net.alan.jupiter.ui.theme.container
+import net.alan.jupiter.ui.theme.content
 
 /**
- * 寝安外壳：顶部路径（QIN'AN /path + 状态灯），底部状态栏。
- * 所有页面都应使用它，保证 14 屏视觉一致。
+ * 寝安的 MD3 组件层。
+ *
+ * 约定：
+ * - 形状一律取 [MaterialTheme.shapes]（卡片 large 16dp / Chip small 8dp / 输入框 medium 12dp / 对话框 extraLarge 28dp）；
+ * - 颜色一律取色角色，屏幕里不出现固定色值；
+ * - 状态文案是中文业务语言；等宽字体只用于数字、日期、ID、房间号；
+ * - 一屏只有一个主操作（[QnPrimaryButton]）。
  */
+
+// =====================================================================
+// 外壳与顶栏
+// =====================================================================
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QnScaffold(
-    path: String,
-    status: QnStatus = QnStatus.OK,
-    statusDetail: String? = null,
+    title: String,
     onBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {},
-    bottomBar: @Composable () -> Unit = {},
+    bottomBar: (@Composable () -> Unit)? = null,
+    snackbarHostState: SnackbarHostState? = null,
     content: @Composable (PaddingValues) -> Unit
 ) {
     Scaffold(
         topBar = {
-            Surface(color = QnPanelAlt) {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 46.dp)
-                            .padding(horizontal = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        if (onBack != null) {
-                            IconButton(onClick = onBack, modifier = Modifier.size(40.dp)) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "返回",
-                                    tint = QnText
-                                )
-                            }
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "返回",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         }
-                        Text(
-                            "寝安",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = QnText
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        actions()
-                        QnStatusTag(status = status, detail = statusDetail)
                     }
-                    HorizontalDivider(color = QnLine, thickness = 1.dp)
-                }
-            }
+                },
+                actions = actions,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
         },
         bottomBar = {
-            QnBottomBar(status = status, detail = statusDetail)
-            bottomBar()
+            if (bottomBar != null) {
+                Column(modifier = Modifier.navigationBarsPadding()) { bottomBar() }
+            }
         },
-        containerColor = QnBg,
+        snackbarHost = {
+            if (snackbarHostState != null) {
+                SnackbarHost(hostState = snackbarHostState)
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.background,
         content = content
     )
 }
 
-/** 顶部状态灯（机器标签，不是胶囊）。 */
 @Composable
-fun QnStatusTag(
-    status: QnStatus,
+fun QnTopIcon(icon: ImageVector, label: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.size(40.dp)) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp)
+        )
+    }
+}
+
+// =====================================================================
+// 卡片
+// =====================================================================
+
+@Composable
+fun QnCard(
     modifier: Modifier = Modifier,
-    detail: String? = null
+    onClick: (() -> Unit)? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
+    contentPadding: PaddingValues = PaddingValues(16.dp),
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    Text(
-        text = status.text(detail),
+    val base = modifier.fillMaxWidth()
+    val clickable = if (onClick != null) base.clickable(onClick = onClick) else base
+    Card(
+        modifier = clickable,
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(contentPadding), content = content)
+    }
+}
+
+/** 主视觉卡：primaryContainer + 28dp 大圆角，一屏最多一张。 */
+@Composable
+fun QnHeroCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    QnCard(
         modifier = modifier,
-        color = status.color,
-        fontFamily = QnMono,
-        fontSize = 10.5.sp,
-        fontWeight = FontWeight.Medium,
-        maxLines = 1
+        onClick = onClick,
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 18.dp),
+        content = content
     )
 }
 
-/** 底部状态栏：版本 / 端口 / 时间。 */
+/** 提示卡：成功 / 警示 / 错误 / 中性，全部走色角色。 */
 @Composable
-fun QnBottomBar(
-    status: QnStatus,
-    detail: String? = null,
-    right: String = ""
+fun QnNoticeCard(
+    text: String,
+    tone: QnTone = QnTone.Neutral,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    icon: ImageVector? = null,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
 ) {
-    Surface(color = QnPanelAlt) {
-        Column {
-            HorizontalDivider(color = QnLine, thickness = 1.dp)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(26.dp)
-                    .padding(horizontal = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = status.text(detail),
-                    color = status.color,
-                    fontFamily = QnMono,
-                    fontSize = 9.5.sp
+    QnCard(
+        modifier = modifier,
+        containerColor = tone.container(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = tone.content(),
+                    modifier = Modifier.size(20.dp)
                 )
-                if (right.isNotBlank()) {
-                    Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                if (title != null) {
                     Text(
-                        text = right,
-                        color = QnTextDim,
-                        fontFamily = QnMono,
-                        fontSize = 9.5.sp
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = tone.content()
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
+                }
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = tone.content()
+                )
+            }
+            if (actionLabel != null && onAction != null) {
+                Spacer(modifier = Modifier.width(10.dp))
+                FilledTonalButton(
+                    onClick = onAction,
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = tone.content(),
+                        contentColor = tone.container()
+                    )
+                ) {
+                    Text(actionLabel, style = MaterialTheme.typography.labelLarge)
                 }
             }
         }
     }
 }
 
-/** 极客卡片：1dp 细线 + 2dp 圆角 + 零阴影。 */
-@Composable
-fun QnCard(
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    contentPadding: PaddingValues = PaddingValues(14.dp),
-    content: @Composable ColumnScope.() -> Unit
-) {
-    val base = modifier
-        .fillMaxWidth()
-        .background(QnPanel, QnRadius)
-        .border(1.dp, QnLine, QnRadius)
-    val clickable = if (onClick != null) base.clickable(onClick = onClick) else base
-    Column(modifier = clickable.padding(contentPadding), content = content)
-}
+// =====================================================================
+// 标签 / 状态
+// =====================================================================
 
-/** 兼容旧调用：ChinanCard 现在等价于 QnCard。 */
 @Composable
-fun ChinanCard(
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit
-) = QnCard(modifier = modifier, onClick = onClick, content = content)
-
-/** 状态标签：小圆点 + 等宽文字，无底色。 */
-@Composable
-fun QnTag(text: String, color: Color, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .background(color, RoundedCornerShape(50))
-        )
-        Spacer(modifier = Modifier.width(5.dp))
-        Text(
-            text = text,
-            color = color,
-            fontFamily = QnMono,
-            fontSize = 10.5.sp,
-            fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-/** 兼容旧调用：StatusChip → QnTag。 */
-@Composable
-fun StatusChip(
+fun QnChip(
     text: String,
-    color: Color,
+    tone: QnTone = QnTone.Neutral,
     modifier: Modifier = Modifier,
-    icon: ImageVector? = null
+    leadingIcon: ImageVector? = null,
+    onClick: (() -> Unit)? = null
 ) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        if (icon != null) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp), tint = color)
-            Spacer(modifier = Modifier.width(4.dp))
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .background(color, RoundedCornerShape(50))
+    val label: @Composable () -> Unit = {
+        Text(text = text, style = MaterialTheme.typography.labelMedium)
+    }
+    val leading: (@Composable () -> Unit)? = leadingIcon?.let { vector ->
+        {
+            Icon(
+                imageVector = vector,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
             )
-            Spacer(modifier = Modifier.width(5.dp))
         }
-        Text(text, color = color, fontFamily = QnMono, fontSize = 10.5.sp)
+    }
+
+    if (onClick != null) {
+        AssistChip(
+            onClick = onClick,
+            label = label,
+            modifier = modifier,
+            leadingIcon = leading,
+            shape = MaterialTheme.shapes.small,
+            colors = AssistChipDefaults.assistChipColors(
+                containerColor = tone.container(),
+                labelColor = tone.content(),
+                leadingIconContentColor = tone.content()
+            ),
+            border = null
+        )
+    } else {
+        AssistChip(
+            onClick = {},
+            enabled = false,
+            label = label,
+            modifier = modifier,
+            leadingIcon = leading,
+            shape = MaterialTheme.shapes.small,
+            colors = AssistChipDefaults.assistChipColors(
+                disabledContainerColor = tone.container(),
+                disabledLabelColor = tone.content(),
+                disabledLeadingIconContentColor = tone.content()
+            ),
+            border = null
+        )
     }
 }
 
-/** 统计块：标签在上（等宽小字），值在下（等宽大号）。 */
+@Composable
+fun QnFilterChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(text, style = MaterialTheme.typography.labelLarge) },
+        modifier = modifier,
+        shape = MaterialTheme.shapes.small,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+        ),
+        border = null
+    )
+}
+
+// =====================================================================
+// 统计 / 键值 / 分组
+// =====================================================================
+
+/** 大数字 + 中文标签（数字等宽，标签 sans）。 */
 @Composable
 fun QnStat(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
-    valueColor: Color = QnText,
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
     hint: String? = null
 ) {
     Column(modifier = modifier) {
         Text(
-            text = label,
-            color = QnTextDim,
-            fontFamily = QnMono,
-            fontSize = 9.5.sp,
-            maxLines = 1
-        )
-        Spacer(modifier = Modifier.height(3.dp))
-        Text(
             text = value,
             color = valueColor,
             fontFamily = QnMono,
-            fontSize = 24.sp,
+            fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
+            maxLines = 1
+        )
+        Text(
+            text = label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelMedium,
             maxLines = 1
         )
         if (hint != null) {
             Text(
                 text = hint,
-                color = QnTextDim,
-                fontFamily = QnMono,
-                fontSize = 9.sp
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1
             )
         }
     }
 }
 
-/** 键值行：左标签等宽暗色，右值等宽主色。 */
+/** 等分的一行统计块。 */
+@Composable
+fun QnStatRow(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        content()
+    }
+}
+
+/** 标准键值行（列表项风格，不用等宽标签）。 */
 @Composable
 fun QnKeyValue(
     label: String,
     value: String,
     modifier: Modifier = Modifier,
-    valueColor: Color = QnText
+    valueColor: Color = MaterialTheme.colorScheme.onSurface,
+    mono: Boolean = false
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = QnTextDim, fontFamily = QnMono, fontSize = 10.sp)
-        Spacer(modifier = Modifier.width(12.dp))
         Text(
-            value,
+            text = label,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.width(84.dp)
+        )
+        Text(
+            text = value,
             color = valueColor,
-            fontFamily = QnMono,
-            fontSize = 11.sp,
+            style = MaterialTheme.typography.bodyMedium,
+            fontFamily = if (mono) QnMono else null,
             maxLines = 2,
             modifier = Modifier.weight(1f)
         )
     }
 }
 
-/** 分区标题：去掉注释风格的 //，常见英文自动转中文。 */
+/** 中文分组标题：13sp / 600 / primary，替代大写等宽小标签。 */
 @Composable
-fun QnSectionLabel(text: String, modifier: Modifier = Modifier) {
-    val raw = text.removePrefix("//").trim()
-    val label = when (raw) {
-        "TASKS" -> "任务"
-        "PROFILE" -> "账号信息"
-        "ACCOUNT" -> "账户"
-        "LICENSE" -> "版权信息"
-        "UPDATE" -> "版本更新"
-        "LOCAL DATA" -> "本地数据"
-        "SERVER" -> "服务器"
-        "PASSWORD" -> "密码"
-        "IDENTITY" -> "身份信息"
-        "COMMANDS" -> "操作"
-        "PENDING" -> "待审核"
-        "HISTORY" -> "历史记录"
-        "LIVE" -> "实时数据"
-        "EVENT STREAM" -> "事件流"
-        "RECENT TASKS" -> "近期任务"
-        else -> raw
-    }
-    if (label.isBlank()) return
+fun QnGroupLabel(text: String, modifier: Modifier = Modifier) {
+    if (text.isBlank()) return
     Text(
-        text = label,
-        modifier = modifier,
-        color = QnTextDim,
-        fontFamily = QnMono,
-        fontSize = 9.5.sp
+        text = text,
+        modifier = modifier.padding(top = 8.dp, bottom = 8.dp),
+        color = MaterialTheme.colorScheme.primary,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold
     )
 }
 
-/** ASCII 进度条：████░░░░ 42%。 */
 @Composable
-fun QnAsciiProgress(progress: Float, modifier: Modifier = Modifier, blocks: Int = 10) {
-    val ratio = progress.coerceIn(0f, 1f)
-    val filled = (ratio * blocks).roundToInt()
-    val bar = "█".repeat(filled) + "░".repeat(blocks - filled)
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        Text(bar, color = QnAccent, fontFamily = QnMono, fontSize = 11.sp)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            "${(ratio * 100).roundToInt()}%",
-            color = QnTextMuted,
-            fontFamily = QnMono,
-            fontSize = 10.sp
-        )
-    }
+fun QnDivider(modifier: Modifier = Modifier) {
+    HorizontalDivider(
+        modifier = modifier,
+        thickness = 1.dp,
+        color = MaterialTheme.colorScheme.outlineVariant
+    )
 }
 
-/** 主按钮：实心强调色，黑字。 */
+// =====================================================================
+// 进度
+// =====================================================================
+
+/** 唯一的进度表达方式：M3 线性进度条（不再有 ████░░）。 */
+@Composable
+fun QnProgress(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+    trackColor: Color = MaterialTheme.colorScheme.surfaceVariant
+) {
+    LinearProgressIndicator(
+        progress = { progress.coerceIn(0f, 1f) },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(6.dp),
+        color = color,
+        trackColor = trackColor
+    )
+}
+
+// =====================================================================
+// 按钮
+// =====================================================================
+
 @Composable
 fun QnPrimaryButton(
     text: String,
@@ -378,23 +469,31 @@ fun QnPrimaryButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 40.dp),
-        enabled = enabled,
-        shape = QnRadius,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = QnAccent,
-            contentColor = QnBg,
-            disabledContainerColor = QnLine,
-            disabledContentColor = QnTextDim
-        )
+        modifier = modifier.heightIn(min = 48.dp),
+        enabled = enabled
     ) {
-        Text(text, fontFamily = QnMono, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
-/** 次按钮：透明底 + 细线。 */
 @Composable
-fun QnGhostButton(
+fun QnTonalButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 44.dp),
+        enabled = enabled
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+fun QnOutlinedButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -402,114 +501,309 @@ fun QnGhostButton(
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 40.dp),
-        enabled = enabled,
-        shape = QnRadius,
-        border = BorderStroke(1.dp, QnLineStrongColor()),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = QnText)
+        modifier = modifier.heightIn(min = 44.dp),
+        enabled = enabled
     ) {
-        Text(text, fontFamily = QnMono, fontSize = 12.sp)
+        Text(text, style = MaterialTheme.typography.labelLarge)
     }
 }
 
-private fun QnLineStrongColor(): Color = Color(0xFF2E3A44)
+@Composable
+fun QnTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    color: Color = MaterialTheme.colorScheme.primary
+) {
+    TextButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+        Text(text, style = MaterialTheme.typography.labelLarge, color = color)
+    }
+}
 
-/** 空状态：虚线感（细线框）+ 机器提示。 */
+/** 危险操作按钮：errorContainer 底，与「取消」明显区分。 */
+@Composable
+fun QnDangerButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 44.dp),
+        enabled = enabled,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        )
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** 对话框里的危险确认：纯文字 + error 色。 */
+@Composable
+fun QnDangerTextButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    TextButton(onClick = onClick, modifier = modifier, enabled = enabled) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+// =====================================================================
+// 头像 / 空态 / 错误态
+// =====================================================================
+
+@Composable
+fun QnAvatar(
+    initial: String,
+    modifier: Modifier = Modifier,
+    size: Dp = 40.dp,
+    containerColor: Color = MaterialTheme.colorScheme.primaryContainer,
+    contentColor: Color = MaterialTheme.colorScheme.onPrimaryContainer
+) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .background(containerColor, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = initial.take(1).ifBlank { "?" },
+            color = contentColor,
+            fontSize = (size.value * 0.4f).sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
 @Composable
 fun QnEmpty(
-    icon: ImageVector,
-    title: String,
-    hint: String? = null,
-    actionLabel: String? = null,
-    onAction: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier
-            .border(1.dp, QnLine, QnRadius)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(26.dp), tint = QnAccent)
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            title,
-            color = QnText,
-            fontFamily = QnMono,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
-        )
-        if (hint != null) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                hint,
-                color = QnTextDim,
-                fontSize = 11.sp,
-                textAlign = TextAlign.Center
-            )
-        }
-        if (actionLabel != null && onAction != null) {
-            Spacer(modifier = Modifier.height(14.dp))
-            QnGhostButton(text = actionLabel, onClick = onAction)
-        }
-    }
-}
-
-/** 兼容旧调用。 */
-@Composable
-fun EmptyState(
     icon: ImageVector,
     title: String,
     modifier: Modifier = Modifier,
     hint: String? = null,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null
-) = QnEmpty(
-    icon = icon,
-    title = title,
-    hint = hint,
-    actionLabel = actionLabel,
-    onAction = onAction,
-    modifier = modifier
-)
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(40.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        if (hint != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
+        if (actionLabel != null && onAction != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            QnTonalButton(text = actionLabel, onClick = onAction)
+        }
+    }
+}
 
-/** 错误状态：红色状态灯 + 详情 + 重试。 */
 @Composable
 fun QnError(
     title: String,
     message: String,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    icon: ImageVector = Icons.Filled.Refresh
+    icon: ImageVector = Icons.Default.Refresh
 ) {
-    Column(
-        modifier = modifier
-            .border(1.dp, QnDanger.copy(alpha = 0.55f), QnRadius)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    QnCard(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.errorContainer,
+        contentPadding = PaddingValues(18.dp)
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp), tint = QnDanger)
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(26.dp),
+            tint = MaterialTheme.colorScheme.onErrorContainer
+        )
         Spacer(modifier = Modifier.height(10.dp))
-        Text(title, color = QnDanger, fontFamily = QnMono, fontSize = 12.sp)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onErrorContainer
+        )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            message,
-            color = QnTextMuted,
-            fontSize = 11.sp,
-            textAlign = TextAlign.Center
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer
         )
         Spacer(modifier = Modifier.height(14.dp))
-        QnGhostButton(text = "重试", onClick = onRetry)
+        QnTonalButton(
+            text = "重试",
+            onClick = onRetry,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
-/** 兼容旧调用。 */
+// =====================================================================
+// 输入
+// =====================================================================
+
 @Composable
-fun ErrorState(
-    title: String,
-    message: String,
-    onRetry: () -> Unit,
+fun QnTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    icon: ImageVector
-) = QnError(title = title, message = message, onRetry = onRetry, modifier = modifier, icon = icon)
+    label: String? = null,
+    placeholder: String? = null,
+    leadingIcon: ImageVector? = null,
+    trailingIcon: (@Composable () -> Unit)? = null,
+    singleLine: Boolean = true,
+    enabled: Boolean = true,
+    readOnly: Boolean = false,
+    isError: Boolean = false,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    supportingText: String? = null,
+    maxLines: Int = if (singleLine) 1 else 4,
+    shape: Shape = MaterialTheme.shapes.small
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.fillMaxWidth(),
+        enabled = enabled,
+        readOnly = readOnly,
+        isError = isError,
+        label = label?.let { { Text(it, style = MaterialTheme.typography.bodyMedium) } },
+        placeholder = placeholder?.let {
+            { Text(it, style = MaterialTheme.typography.bodyMedium) }
+        },
+        leadingIcon = leadingIcon?.let { vector ->
+            {
+                Icon(
+                    imageVector = vector,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        },
+        trailingIcon = trailingIcon,
+        supportingText = supportingText?.let {
+            { Text(it, style = MaterialTheme.typography.bodySmall) }
+        },
+        singleLine = singleLine,
+        maxLines = maxLines,
+        visualTransformation = visualTransformation,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        shape = shape,
+        textStyle = MaterialTheme.typography.bodyLarge,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+            cursorColor = MaterialTheme.colorScheme.primary,
+            focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+            unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    )
+}
+
+// =====================================================================
+// 文案工具
+// =====================================================================
+
+/** 角色文案：全仓统一一处，避免设置页写「工作人员」而我的页写英文。 */
+fun roleLabel(role: String?): String = when (role?.uppercase()) {
+    "ADMIN" -> "管理员"
+    else -> "工作人员"
+}
+
+/** 手机号脱敏：138****1111（资料展示用）。 */
+fun maskPhone(phone: String?): String {
+    val value = phone.orEmpty().trim()
+    if (value.length != 11) return value.ifBlank { "-" }
+    return value.substring(0, 3) + "****" + value.substring(7)
+}
+
+// =====================================================================
+// 列表行
+// =====================================================================
+
+/**
+ * 标准列表行：左侧头像位 / 标题 / 副标题 / 右侧尾随内容。
+ * 房间号、学号等用 [mono] 走等宽。
+ */
+@Composable
+fun QnListItem(
+    title: String,
+    modifier: Modifier = Modifier,
+    meta: String? = null,
+    leading: (@Composable () -> Unit)? = null,
+    trailing: (@Composable RowScope.() -> Unit)? = null,
+    monoTitle: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    val base = modifier
+        .fillMaxWidth()
+        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        .padding(horizontal = 16.dp, vertical = 12.dp)
+    Row(modifier = base, verticalAlignment = Alignment.CenterVertically) {
+        if (leading != null) {
+            leading()
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontFamily = if (monoTitle) QnMono else null,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (meta != null) {
+                Text(
+                    text = meta,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2
+                )
+            }
+        }
+        if (trailing != null) {
+            Spacer(modifier = Modifier.width(10.dp))
+            trailing()
+        }
+    }
+}

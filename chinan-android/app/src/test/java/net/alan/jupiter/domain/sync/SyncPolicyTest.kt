@@ -85,9 +85,10 @@ class SyncPolicyTest {
     }
 
     @Test
-    fun `window skips records without taskDate instead of guessing`() {
-        assertFalse(TaskDateWindow.inWindow(null, "2026-11-05", "2026-11-07"))
-        assertFalse(TaskDateWindow.inWindow("", "2026-11-05", "2026-11-07"))
+    fun `window keeps records without taskDate`() {
+        // 日期未知时不能静默丢弃，宁可补交
+        assertTrue(TaskDateWindow.inWindow(null, "2026-11-05", "2026-11-07"))
+        assertTrue(TaskDateWindow.inWindow("", "2026-11-05", "2026-11-07"))
     }
 
     @Test
@@ -146,7 +147,8 @@ class SyncPolicyTest {
             fromIso = "2026-11-05",
             toIso = "2026-11-07"
         )
-        assertEquals(listOf("in"), selected.map { it.clientOpId })
+        // 无日期记录也保留，并按 taskDate 空值排在最前
+        assertEquals(listOf("unknown", "in"), selected.map { it.clientOpId })
     }
 
     @Test

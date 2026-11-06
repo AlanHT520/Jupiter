@@ -33,12 +33,9 @@ public class ImportCounselorService {
             "姓名", "性别", "手机号", "密码", "部门", "学号", "班级"
     );
 
-    private static final List<String> SAMPLE_ROW = List.of(
-            "张浩天", "男", "15226511870", "123456", "权益部", "2602531414", "机车2602"
-    );
 
     private static final List<List<String>> INSTRUCTION_ROWS = List.of(
-            List.of("姓名", "必填", "文本", "张浩天", ""),
+            List.of("姓名", "必填", "文本", "", ""),
             List.of("性别", "选填", "文本", "男", "男 / 女"),
             List.of("手机号", "必填", "文本", "15226511870", "11 位数字，同时作为登录账号"),
             List.of("密码", "选填", "文本", "123456", "至少 6 位；留空则默认用手机号作为初始密码"),

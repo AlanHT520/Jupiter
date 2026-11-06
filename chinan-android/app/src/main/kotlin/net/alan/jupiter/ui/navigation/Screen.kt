@@ -16,12 +16,15 @@ sealed class Screen(val route: String) {
             val pattern = "tasks/{taskId}/rooms/{roomId}/{roomNumber}"
         }
     }
-    data object Settings : Screen("settings")
-    data object Profile : Screen("profile")
 
     /** A09 总汇总（本地聚合） */
     data object Summary : Screen("summary")
 
-    /** A10 缓存与同步（outbox / 补交 / 清除数据） */
+    /** A10 同步与上传（outbox / 同步 / 诊断） */
     data object Sync : Screen("sync")
+
+    data object Settings : Screen("settings")
+
+    /** 我的：从设置「账户」卡进入。 */
+    data object Profile : Screen("me")
 }

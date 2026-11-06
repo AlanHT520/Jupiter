@@ -12,7 +12,7 @@
         <HBox styleClass="top-bar">
             <HBox styleClass="brand-mark" alignment="CENTER_LEFT">
                 <Label text="寝安" styleClass="brand-name"/>
-                <Label text="宿舍查寝系统 v1.0.0" styleClass="brand-ver"/>
+                <Label text="宿舍查寝系统 v0.9.1" styleClass="brand-ver"/>
             </HBox>
 
             <Label fx:id="pathLabel" text="寝安 / 仪表盘" styleClass="path-label"/>
@@ -133,7 +133,7 @@
                 <Label text="│" styleClass="status-sep"/>
                 <Label fx:id="roleLabel" text="角色 -" styleClass="status-item"/>
                 <Label text="│" styleClass="status-sep"/>
-                <Label fx:id="versionLabel" text="v1.0.0" styleClass="status-item"/>
+                <Label fx:id="versionLabel" text="v0.9.1" styleClass="status-item"/>
             </HBox>
         </HBox>
     </bottom>

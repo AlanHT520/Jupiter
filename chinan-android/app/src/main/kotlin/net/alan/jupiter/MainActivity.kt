@@ -1,4 +1,4 @@
-    package net.alan.jupiter
+package net.alan.jupiter
 
 import android.content.BroadcastReceiver
 import android.os.Build
@@ -8,8 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,8 +25,6 @@ import net.alan.jupiter.data.remote.UpdateManager
 import net.alan.jupiter.ui.navigation.AppNavGraph
 import net.alan.jupiter.ui.navigation.Screen
 import net.alan.jupiter.ui.theme.ChinanTheme
-import net.alan.jupiter.ui.theme.QnAccent
-import net.alan.jupiter.ui.theme.QnBg
 import net.alan.jupiter.ui.update.UpdateDialog
 import javax.inject.Inject
 
@@ -59,37 +57,42 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            // 暗色唯一主题：显式关闭跟随系统浅色
-            ChinanTheme(darkTheme = true) {
+            // MD3：跟随系统浅/深色，Android 12+ 可开动态取色（默认关，保持品牌色稳定）
+            ChinanTheme {
                 Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .systemBarsPadding(),
-                    color = QnBg
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    var startDestination by remember { mutableStateOf<String?>(null) }
+                    // 系统栏 insets 由各屏 Scaffold 统一处理，这里不再叠加，避免双重留白
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        var startDestination by remember { mutableStateOf<String?>(null) }
 
-                    LaunchedEffect(Unit) {
-                        val hasToken = tokenManager.hasToken()
-                        startDestination = if (hasToken) Screen.TaskList.route else Screen.Login.route
-                    }
-
-                    val dest = startDestination
-                    if (dest != null) {
-                        AppNavGraph(startDestination = dest)
-                    } else {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = QnAccent,
-                                strokeWidth = 2.dp
-                            )
+                        LaunchedEffect(Unit) {
+                            val hasToken = tokenManager.hasToken()
+                            startDestination = if (hasToken) {
+                                Screen.TaskList.route
+                            } else {
+                                Screen.Login.route
+                            }
                         }
-                    }
 
-                    CheckUpdateSection()
+                        val dest = startDestination
+                        if (dest != null) {
+                            AppNavGraph(startDestination = dest)
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    strokeWidth = 3.dp
+                                )
+                            }
+                        }
+
+                        CheckUpdateSection()
+                    }
                 }
             }
         }
@@ -100,7 +103,6 @@ class MainActivity : ComponentActivity() {
         var showUpdateDialog by remember { mutableStateOf(false) }
         var updateVersion by remember { mutableStateOf("") }
         var updateChangelog by remember { mutableStateOf("") }
-        var downloading by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             updateManager.checkForUpdate(
@@ -116,12 +118,10 @@ class MainActivity : ComponentActivity() {
             UpdateDialog(
                 version = updateVersion,
                 changelog = updateChangelog,
-                downloading = downloading,
+                // 下载交给系统 DownloadManager，在通知栏完成；对话框随即关闭，避免重复触发
                 onDownload = {
-                    downloading = true
                     updateManager.downloadApk(updateVersion)
-                    // 下载交由系统 DownloadManager 在通知栏进行，这里恢复按钮，避免对话框永久卡住
-                    downloading = false
+                    showUpdateDialog = false
                 },
                 onDismiss = { showUpdateDialog = false }
             )

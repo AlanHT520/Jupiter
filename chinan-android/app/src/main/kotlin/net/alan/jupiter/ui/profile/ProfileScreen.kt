@@ -1,11 +1,24 @@
 package net.alan.jupiter.ui.profile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -14,130 +27,122 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import net.alan.jupiter.ui.components.QnAvatar
 import net.alan.jupiter.ui.components.QnCard
+import net.alan.jupiter.ui.components.QnChip
+import net.alan.jupiter.ui.components.QnDivider
+import net.alan.jupiter.ui.components.QnGroupLabel
 import net.alan.jupiter.ui.components.QnKeyValue
-import net.alan.jupiter.ui.components.QnMono
-import net.alan.jupiter.ui.components.QnRadius
+import net.alan.jupiter.ui.components.QnNoticeCard
 import net.alan.jupiter.ui.components.QnScaffold
-import net.alan.jupiter.ui.components.QnSectionLabel
-import net.alan.jupiter.ui.components.QnStatus
-import net.alan.jupiter.ui.components.QnTag
-import net.alan.jupiter.ui.theme.QnAccent
-import net.alan.jupiter.ui.theme.QnLine
-import net.alan.jupiter.ui.theme.QnPanelAlt
-import net.alan.jupiter.ui.theme.QnText
-import net.alan.jupiter.ui.theme.QnTextDim
-import net.alan.jupiter.ui.theme.QnTextMuted
+import net.alan.jupiter.ui.components.maskPhone
+import net.alan.jupiter.ui.components.roleLabel
+import net.alan.jupiter.ui.theme.QnTone
 
 /**
- * 账户信息（/me）：头像卡 + 等宽 QnKeyValue 列表。
+ * 我的（/me）。
+ *
+ * 账户卡 + 资料卡（班级 / 部门 / 手机 / 角色）；不展示学号（账号体系里学号不是身份）。
+ * 改密码指向设置页的「账户管理」。
  */
 @Composable
 fun ProfileScreen(
     onBackClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val roleLabel = when (uiState.role.uppercase()) {
-        "ADMIN" -> "管理员"
-        "" -> "查宿员"
-        else -> uiState.role
-    }
+    val profile by viewModel.uiState.collectAsState()
 
-    QnScaffold(
-        path = "/me",
-        status = if (uiState.isLoading) QnStatus.RUNNING else QnStatus.OK,
-        onBack = onBackClick
-    ) { padding ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(34.dp),
-                    strokeWidth = 2.dp,
-                    color = QnAccent
-                )
-            }
-        } else {
+    QnScaffold(title = "我的", onBack = onBackClick) { padding ->
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
+                    .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(12.dp),
+                    .heightIn(min = maxHeight)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                QnCard {
+                QnCard(contentPadding = PaddingValues(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(54.dp)
-                                .background(QnPanelAlt, QnRadius)
-                                .border(1.dp, QnLine, QnRadius),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = uiState.name.take(1).ifBlank { "?" },
-                                color = QnAccent,
-                                fontFamily = QnMono,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        QnAvatar(
+                            initial = profile.name.ifBlank { "?" },
+                            size = 56.dp,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = uiState.name.ifBlank { "未设置姓名" },
-                                color = QnText,
-                                fontSize = 15.sp,
+                                text = profile.name.ifBlank { "未设置姓名" },
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold,
-                                maxLines = 1
+                                color = MaterialTheme.colorScheme.onSurface
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "@${uiState.username.ifBlank { "-" }}",
-                                color = QnTextDim,
-                                fontFamily = QnMono,
-                                fontSize = 10.sp,
-                                maxLines = 1
+                                text = if (profile.username.isBlank()) {
+                                    "-"
+                                } else {
+                                    "@${profile.username}"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
+                        QnChip(text = roleLabel(profile.role), tone = QnTone.Success)
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                QnCard(contentPadding = PaddingValues(18.dp)) {
+                    QnGroupLabel("资料", modifier = Modifier.padding(top = 0.dp))
+                    QnKeyValue(label = "班级", value = profile.className.ifBlank { "-" })
+                    QnKeyValue(label = "部门", value = profile.departmentName.ifBlank { "-" })
+                    QnKeyValue(label = "手机", value = maskPhone(profile.phone), mono = true)
+                    QnKeyValue(label = "角色", value = roleLabel(profile.role))
+                }
+
+                QnNoticeCard(
+                    text = "修改密码请到「设置 → 账户管理」。",
+                    tone = QnTone.Neutral
+                )
+
+                QnCard(onClick = onSettingsClick, contentPadding = PaddingValues(18.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        QnTag(text = roleLabel, color = QnAccent)
-                        Spacer(modifier = Modifier.weight(1f))
                         Text(
-                            text = "ROLE ${uiState.role.ifBlank { "-" }}",
-                            color = QnTextDim,
-                            fontFamily = QnMono,
-                            fontSize = 9.5.sp
+                            text = "前往设置",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "同步与上传 · 本地数据 · 退出登录",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
 
-                QnCard {
-                    QnSectionLabel("PROFILE")
-                    Spacer(modifier = Modifier.height(8.dp))
-                    QnKeyValue(label = "班级", value = uiState.className.ifBlank { "-" })
-                    QnKeyValue(label = "部门", value = uiState.departmentName.ifBlank { "-" })
-                    QnKeyValue(label = "手机", value = uiState.phone.ifBlank { "-" })
-                    QnKeyValue(label = "角色", value = roleLabel)
-                }
-
+                QnDivider()
                 Text(
-                    text = "// 如需修改密码或账户信息，请联系管理员",
-                    color = QnTextMuted,
-                    fontFamily = QnMono,
-                    fontSize = 10.sp,
-                    modifier = Modifier.padding(horizontal = 2.dp)
+                    text = "寝安 · 宿舍查寝管理系统",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

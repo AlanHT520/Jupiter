@@ -1,24 +1,60 @@
 package net.alan.jupiter.ui.login
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Dns
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -26,14 +62,22 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import net.alan.jupiter.ui.theme.QnAccent
-import net.alan.jupiter.ui.theme.QnBg
-import net.alan.jupiter.ui.theme.QnLine
-import net.alan.jupiter.ui.theme.QnPanel
-import net.alan.jupiter.ui.theme.QnText
-import net.alan.jupiter.ui.theme.QnTextDim
-import net.alan.jupiter.ui.theme.QnTextMuted
+import net.alan.jupiter.R
+import net.alan.jupiter.data.local.ServerConfigManager
+import net.alan.jupiter.ui.components.QnCard
+import net.alan.jupiter.ui.components.QnDivider
+import net.alan.jupiter.ui.components.QnNoticeCard
+import net.alan.jupiter.ui.components.QnScaffold
+import net.alan.jupiter.ui.components.QnTextField
+import net.alan.jupiter.ui.theme.QnTone
 
+/**
+ * 登录（/login）。
+ *
+ * 结构：品牌区（软件图标 + 名称）+ 登录面板（OutlinedTextField / filled Button）。
+ * 整页铺满屏幕：内容不足一屏时垂直居中，键盘弹起时面板可滚动。
+ * 服务器地址/端口来自默认配置（218.12.120.170 : 49749），「服务器配置」默认收起。
+ */
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -43,238 +87,206 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val focusManager = LocalFocusManager.current
     var passwordVisible by remember { mutableStateOf(false) }
-    var showServerConfig by remember { mutableStateOf(false) }
+    // 默认收起：只有用户点过才展开
+    var serverConfigToggled by remember { mutableStateOf<Boolean?>(null) }
+    val showServerConfig = serverConfigToggled ?: false
 
     LaunchedEffect(uiState.loginSuccess) {
         if (uiState.loginSuccess) onLoginSuccess()
     }
 
-    val isDarkTheme = isSystemInDarkTheme()
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
+    QnScaffold(title = "寝安") { padding ->
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .background(QnBg)
+                .padding(padding)
+                .imePadding()
         ) {
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(0.35f),
-                contentAlignment = Alignment.Center
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                // 铺满整屏：品牌区靠上、登录面板靠下，中间空白由布局吸收
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
+                // ── 品牌区：软件图标 + 名称 ──
                 Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Surface(
-                        modifier = Modifier.size(72.dp),
-                        shape = MaterialTheme.shapes.small,
-                        color = QnPanel,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, QnLine),
-                        tonalElevation = 0.dp
-                    ) {
-                        Icon(
-                            Icons.Default.School,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .padding(14.dp)
-                                .fillMaxSize(),
-                            tint = QnAccent
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
+                    Image(
+                        painter = painterResource(R.drawable.ic_brand_logo),
+                        contentDescription = "寝安",
+                        modifier = Modifier.size(84.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
                     Text(
                         text = "寝安",
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = QnText
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-
                     Text(
                         text = "宿舍查寝管理系统",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = QnTextMuted,
-                        modifier = Modifier.padding(top = 6.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
 
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight(),
-                shape = MaterialTheme.shapes.extraLarge,
-                color = QnPanel,
-                shadowElevation = 0.dp,
-                tonalElevation = 0.dp,
-                border = androidx.compose.foundation.BorderStroke(1.dp, QnLine)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 28.dp, vertical = 28.dp)
-                        .imePadding(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // ── 登录面板 ──
+                QnCard(contentPadding = PaddingValues(18.dp)) {
                     Text(
                         text = "欢迎回来",
                         style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.fillMaxWidth()
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
-
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "请登录以继续使用",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 4.dp, bottom = 28.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    OutlinedTextField(
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    QnTextField(
                         value = uiState.username,
                         onValueChange = viewModel::updateUsername,
-                        label = { Text("手机号") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Down) }),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        label = "手机号",
+                        leadingIcon = Icons.Outlined.Person,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Phone,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
                         )
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    OutlinedTextField(
+                    QnTextField(
                         value = uiState.password,
                         onValueChange = viewModel::updatePassword,
-                        label = { Text("密码") },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Default.Lock,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
+                        label = "密码",
+                        leadingIcon = Icons.Outlined.Lock,
                         trailingIcon = {
                             IconButton(onClick = { passwordVisible = !passwordVisible }) {
                                 Icon(
-                                    if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    imageVector = if (passwordVisible) {
+                                        Icons.Default.VisibilityOff
+                                    } else {
+                                        Icons.Default.Visibility
+                                    },
                                     contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.medium,
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        visualTransformation = if (passwordVisible) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done
                         ),
-                        keyboardActions = KeyboardActions(onDone = { viewModel.login() }),
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
+                        keyboardActions = KeyboardActions(onDone = { viewModel.login() })
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    if (uiState.error != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        QnNoticeCard(
+                            title = "登录失败",
+                            text = uiState.error.orEmpty(),
+                            tone = QnTone.Danger,
+                            icon = Icons.Outlined.ErrorOutline
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     Button(
                         onClick = { viewModel.login() },
                         enabled = !uiState.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
-                        shape = MaterialTheme.shapes.small,
+                            .height(50.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = QnAccent,
-                            contentColor = QnBg
-                        ),
-                        elevation = null
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 strokeWidth = 2.dp,
-                                color = QnBg
+                                color = MaterialTheme.colorScheme.onPrimary
                             )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text("登录中...", fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("登录中…", style = MaterialTheme.typography.labelLarge)
                         } else {
-                            Icon(Icons.Default.Login, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                "登录",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("登录", style = MaterialTheme.typography.labelLarge)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+                    QnDivider()
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     if (onRegisterClick != null) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedButton(
-                            onClick = onRegisterClick,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Icon(
-                                Icons.Default.PersonAdd,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                        if (uiState.registrationEnabled) {
+                            OutlinedButton(
+                                onClick = onRegisterClick,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                            ) {
+                                Text("申请加入", style = MaterialTheme.typography.labelLarge)
+                            }
+                        } else {
+                            Text(
+                                text = "注册暂未开放，请联系管理员开通账号",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.fillMaxWidth()
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("申请加入", style = MaterialTheme.typography.titleSmall)
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                    TextButton(
-                        onClick = { showServerConfig = !showServerConfig },
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            Icons.Default.Settings,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            "服务器配置",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            if (showServerConfig) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        TextButton(onClick = { serverConfigToggled = !showServerConfig }) {
+                            Text(
+                                text = "服务器配置",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = if (showServerConfig) {
+                                    Icons.Default.ExpandLess
+                                } else {
+                                    Icons.Default.ExpandMore
+                                },
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
 
                     AnimatedVisibility(
@@ -282,99 +294,43 @@ fun LoginScreen(
                         enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
                         exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
                     ) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                            ),
-                            shape = MaterialTheme.shapes.medium,
-                            border = null
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                verticalArrangement = Arrangement.spacedBy(12.dp)
-                            ) {
-                                Text(
-                                    "连接设置",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
+                        Column {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                QnTextField(
+                                    value = uiState.host,
+                                    onValueChange = viewModel::updateHost,
+                                    label = "服务器地址",
+                                    leadingIcon = Icons.Outlined.Dns,
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Uri,
+                                        imeAction = ImeAction.Next
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onNext = { focusManager.moveFocus(FocusDirection.Right) }
+                                    ),
+                                    modifier = Modifier.weight(2f)
                                 )
-
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                                ) {
-                                    OutlinedTextField(
-                                        value = uiState.host,
-                                        onValueChange = viewModel::updateHost,
-                                        label = { Text("服务器地址") },
-                                        placeholder = { Text("") },
-                                        leadingIcon = {
-                                            Icon(
-                                                Icons.Default.Dns,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(20.dp),
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        },
-                                        singleLine = true,
-                                        shape = MaterialTheme.shapes.small,
-                                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                        keyboardActions = KeyboardActions(onNext = { focusManager.moveFocus(FocusDirection.Right) }),
-                                        modifier = Modifier.weight(2f)
-                                    )
-                                    OutlinedTextField(
-                                        value = uiState.port,
-                                        onValueChange = viewModel::updatePort,
-                                        label = { Text("端口") },
-                                        singleLine = true,
-                                        shape = MaterialTheme.shapes.small,
-                                        keyboardOptions = KeyboardOptions(
-                                            keyboardType = KeyboardType.Number,
-                                            imeAction = ImeAction.Done
-                                        ),
-                                        keyboardActions = KeyboardActions(onDone = { viewModel.login() }),
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (uiState.error != null) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-                            ),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.ErrorOutline,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(20.dp),
-                                    tint = MaterialTheme.colorScheme.error
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Text(
-                                    uiState.error!!,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.error,
+                                QnTextField(
+                                    value = uiState.port,
+                                    onValueChange = viewModel::updatePort,
+                                    label = "端口",
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Number,
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    keyboardActions = KeyboardActions(onDone = { viewModel.login() }),
                                     modifier = Modifier.weight(1f)
                                 )
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "默认 ${ServerConfigManager.DEFAULT_HOST} : " +
+                                    "${ServerConfigManager.DEFAULT_PORT}，内网部署时改成自己的地址",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(20.dp))
                 }
             }
         }

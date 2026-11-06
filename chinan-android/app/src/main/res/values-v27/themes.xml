@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- API 27+：内容延伸到刘海区域，导航栏图标明暗随主题 -->
+    <style name="Theme.ChinanKE" parent="Theme.ChinanKE.Base">
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowLightNavigationBar">@bool/app_light_system_bars</item>
+    </style>
+</resources>

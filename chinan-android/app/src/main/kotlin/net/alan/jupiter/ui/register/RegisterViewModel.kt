@@ -40,7 +40,7 @@ class RegisterViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             val host = serverConfigManager.getHost()
-            val port = serverConfigManager.getPort().ifBlank { "49749" }
+            val port = serverConfigManager.getPort().ifBlank { ServerConfigManager.DEFAULT_PORT }
             _uiState.update { it.copy(host = host, port = port) }
         }
     }
@@ -52,7 +52,13 @@ class RegisterViewModel @Inject constructor(
     fun updateClassName(value: String) = _uiState.update { it.copy(className = value, error = null) }
     fun updatePassword(value: String) = _uiState.update { it.copy(password = value, error = null) }
     fun updateConfirmPassword(value: String) = _uiState.update { it.copy(confirmPassword = value, error = null) }
-    fun updateHost(value: String) = _uiState.update { it.copy(host = value, error = null) }
+    fun updateHost(value: String) = _uiState.update {
+        // 中文输入法会把 `.` 打成 `。`，统一归一半角，否则注册必然连不上
+        it.copy(
+            host = value.replace('。', '.').replace('，', ',').replace('．', '.').trim(),
+            error = null
+        )
+    }
     fun updatePort(value: String) = _uiState.update { it.copy(port = value, error = null) }
 
     fun submit() {
@@ -92,7 +98,14 @@ class RegisterViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            serverConfigManager.saveServerConfig(state.host.trim(), state.port.trim().ifBlank { "49749" })
+            // 只在地址真正变化时写配置，避免「注册一次把登录页已存的服务器改坏」
+            val targetHost = state.host.trim()
+            val targetPort = state.port.trim().ifBlank { ServerConfigManager.DEFAULT_PORT }
+            if (targetHost != serverConfigManager.getHost() ||
+                targetPort != serverConfigManager.getPort()
+            ) {
+                serverConfigManager.saveServerConfig(targetHost, targetPort)
+            }
             when (val result = repository.submitRegistration(
                 name = state.name.trim(),
                 gender = state.gender.trim(),

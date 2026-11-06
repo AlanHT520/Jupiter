@@ -9,4 +9,6 @@
     <color name="white">#FFFFFFFF</color>
     <!-- 与桌面端 chinan.png 的深青底色一致 -->
     <color name="ic_launcher_bg">#FF344F5E</color>
+    <!-- 窗口底色：与 Compose 的 MdLightBackground 一致，避免启动/边缘露出深色 -->
+    <color name="app_window_background">#FFF5FBF7</color>
 </resources>

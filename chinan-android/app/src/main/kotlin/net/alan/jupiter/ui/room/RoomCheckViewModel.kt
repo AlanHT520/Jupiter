@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -80,6 +81,7 @@ class RoomCheckViewModel @Inject constructor(
     private val uploadSemaphore = Semaphore(3)
     private val draftJobs = ConcurrentHashMap<Int, Job>()
     private var recordsJob: Job? = null
+    private var loadJob: Job? = null
 
     private var currentTaskId: String = ""
     private var currentRoomId: String = ""
@@ -88,68 +90,80 @@ class RoomCheckViewModel @Inject constructor(
         currentTaskId = taskId
         currentRoomId = roomId
         observeRoomRecords(taskId, roomId)
-        viewModelScope.launch {
+        // 刷新按钮与首次进入可能叠加：取消上一次加载，避免两次结果互相覆盖
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, submitSuccess = false) }
-
-            val result = repository.getRoomStudents(taskId, roomId)
-            val remoteStudents = when (result) {
-                is Resource.Success -> result.data
-                else -> emptyList()
-            }
-            val students = if (remoteStudents.isNotEmpty()) {
-                remoteStudents
-            } else {
-                repository.cachedRoomStudents(taskId, roomId)
-            }
-            val records = repository.roomRecords(taskId, roomId)
-            val queuedCount = records.count { it.isPendingSync }
-            val unauthorizedMessage = when (result) {
-                is Resource.Unauthorized -> result.message
-                else -> null
-            }
-            val failureMessage = when (result) {
-                is Resource.Error -> result.message
-                else -> null
-            }
-
-            if (students.isEmpty()) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        cacheOnly = false,
-                        queuedCount = queuedCount,
-                        error = unauthorizedMessage ?: failureMessage
-                    )
+            try {
+                loadRoomInternal(taskId, roomId)
+            } finally {
+                // 异常/取消都不能让整屏停在「正在加载学生名单」
+                if (isActive) {
+                    _uiState.update { it.copy(isLoading = false) }
                 }
-                return@launch
             }
+        }
+    }
 
-            val recordByStudent = records.associateBy { it.studentId }
-            val mapped = students.map { student ->
-                val record = recordByStudent[student.id]
-                StudentWithStatus(
-                    student = student,
-                    selectedStatus = record?.let { CheckStatus.fromCode(it.statusCode) }
-                        ?: student.currentStatus
-                        ?: CheckStatus.PRESENT,
-                    remark = record?.remark ?: student.remark ?: "",
-                    proofLocalPath = record?.proofPath,
-                    proofFilePath = record?.proofFilePath ?: student.proofFilePath,
-                    isDirty = record != null
-                )
-            }
+    private suspend fun loadRoomInternal(taskId: String, roomId: String) {
+        val result = repository.getRoomStudents(taskId, roomId)
+        val remoteStudents = when (result) {
+            is Resource.Success -> result.data
+            else -> emptyList()
+        }
+        val students = if (remoteStudents.isNotEmpty()) {
+            remoteStudents
+        } else {
+            repository.cachedRoomStudents(taskId, roomId)
+        }
+        val records = repository.roomRecords(taskId, roomId)
+        val queuedCount = records.count { it.isPendingSync }
+        val unauthorizedMessage = when (result) {
+            is Resource.Unauthorized -> result.message
+            else -> null
+        }
+        val failureMessage = when (result) {
+            is Resource.Error -> result.message
+            else -> null
+        }
 
+        if (students.isEmpty()) {
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    roomNumber = students.firstOrNull()?.roomNumber ?: "",
-                    floorNumber = "",
-                    students = mapped,
-                    cacheOnly = remoteStudents.isEmpty() && unauthorizedMessage == null,
+                    cacheOnly = false,
                     queuedCount = queuedCount,
-                    error = unauthorizedMessage
+                    error = unauthorizedMessage ?: failureMessage
                 )
             }
+            return
+        }
+
+        val recordByStudent = records.associateBy { it.studentId }
+        val mapped = students.map { student ->
+            val record = recordByStudent[student.id]
+            StudentWithStatus(
+                student = student,
+                selectedStatus = record?.let { CheckStatus.fromCode(it.statusCode) }
+                    ?: student.currentStatus
+                    ?: CheckStatus.PRESENT,
+                remark = record?.remark ?: student.remark ?: "",
+                proofLocalPath = record?.proofPath,
+                proofFilePath = record?.proofFilePath ?: student.proofFilePath,
+                isDirty = false
+            )
+        }
+
+        _uiState.update {
+            it.copy(
+                isLoading = false,
+                roomNumber = students.firstOrNull()?.roomNumber ?: "",
+                floorNumber = "",
+                students = mapped,
+                cacheOnly = remoteStudents.isEmpty() && unauthorizedMessage == null,
+                queuedCount = queuedCount,
+                error = unauthorizedMessage
+            )
         }
     }
 
@@ -165,10 +179,22 @@ class RoomCheckViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 选状态。只有状态真的变了才算「本次修改」——
+     * 这决定了学生卡上是否出现「已修改」标记与备注输入框，
+     * 也决定了提交前会不会把这个学生重新落盘。
+     */
     fun updateStatus(studentIndex: Int, status: CheckStatus) {
+        val current = _uiState.value.students.getOrNull(studentIndex) ?: return
+        if (current.selectedStatus == status) return
+
         _uiState.update { state ->
             val updated = state.students.toMutableList()
-            updated[studentIndex] = updated[studentIndex].copy(selectedStatus = status, isDirty = true)
+            if (studentIndex !in updated.indices) return@update state
+            updated[studentIndex] = updated[studentIndex].copy(
+                selectedStatus = status,
+                isDirty = true
+            )
             state.copy(students = updated)
         }
         persistDraft(studentIndex)
@@ -261,7 +287,8 @@ class RoomCheckViewModel @Inject constructor(
 
         (uploadStates[studentId] as? UploadState.Uploading)?.job?.cancel()
 
-        val job = viewModelScope.launch {
+        lateinit var job: kotlinx.coroutines.Job
+        job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             val result = runCatching {
                 uploadSemaphore.withPermit {
                     val (base64, ext) = withContext(Dispatchers.Default) {
@@ -325,6 +352,7 @@ class RoomCheckViewModel @Inject constructor(
             }
         }
         uploadStates[studentId] = UploadState.Uploading(localPath, job)
+        job.start()
     }
 
     /**
@@ -423,7 +451,17 @@ class RoomCheckViewModel @Inject constructor(
             }
             val proofPaths = state.students.associate { it.student.id to it.proofLocalPath }
 
-            val outcome = repository.submitCheck(taskId, roomId, items, proofPaths)
+            val outcome = try {
+                repository.submitCheck(taskId, roomId, items, proofPaths)
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isSubmitting = false,
+                        error = e.message?.takeIf { msg -> msg.isNotBlank() } ?: "提交失败，请检查网络后重试"
+                    )
+                }
+                return@launch
+            }
             val queuedCount = repository.roomPendingCount(taskId, roomId)
 
             _uiState.update {

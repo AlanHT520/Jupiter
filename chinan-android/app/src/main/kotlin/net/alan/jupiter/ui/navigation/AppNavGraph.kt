@@ -12,22 +12,27 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import net.alan.jupiter.ui.login.LoginScreen
 import net.alan.jupiter.ui.login.LoginViewModel
 import net.alan.jupiter.ui.overview.TaskOverviewScreen
+import net.alan.jupiter.ui.profile.ProfileScreen
 import net.alan.jupiter.ui.register.RegisterScreen
 import net.alan.jupiter.ui.room.RoomCheckScreen
-import net.alan.jupiter.ui.profile.ProfileScreen
 import net.alan.jupiter.ui.settings.SettingsScreen
 import net.alan.jupiter.ui.summary.GlobalSummaryScreen
 import net.alan.jupiter.ui.sync.SyncStatusScreen
 import net.alan.jupiter.ui.tasks.TaskListScreen
 import net.alan.jupiter.ui.tasks.TaskListViewModel
 
+/**
+ * 路由树：登录 → 今日任务 → 任务概览 → 房间查寝，其余为平级二级页
+ * （汇总 / 同步 / 设置 / 我的）。刻意不引入底部导航：下钻路径需要随时可回退。
+ */
 @Composable
 fun AppNavGraph(
-    navController: NavHostController = androidx.navigation.compose.rememberNavController(),
+    navController: NavHostController = rememberNavController(),
     startDestination: String = Screen.Login.route
 ) {
     NavHost(
@@ -50,9 +55,7 @@ fun AppNavGraph(
         composable(Screen.Register.route) {
             RegisterScreen(
                 onBackClick = { navController.popBackStack() },
-                onSuccess = {
-                    navController.popBackStack()
-                }
+                onSuccess = { navController.popBackStack() }
             )
         }
 
@@ -68,7 +71,6 @@ fun AppNavGraph(
                     )
                 },
                 onSettingsClick = { navController.navigate(Screen.Settings.route) },
-                onProfileClick = { navController.navigate(Screen.Profile.route) },
                 onSummaryClick = { navController.navigate(Screen.Summary.route) },
                 onSyncClick = { navController.navigate(Screen.Sync.route) },
                 onLogout = {
@@ -133,11 +135,12 @@ fun AppNavGraph(
                 taskId = taskId,
                 roomId = roomId,
                 roomNumber = roomNumber,
-                // 概览页路由参数里带着楼栋名，房间页把它用于顶部路径 /check/<building>/<room>
+                // 概览页路由参数里带着楼栋名，房间页用它显示「N 人 · B4」
                 buildingName = navController.previousBackStackEntry
                     ?.arguments
                     ?.getString("buildingName")
                     ?: "",
+                onOpenSync = { navController.navigate(Screen.Sync.route) },
                 onBackClick = { navController.popBackStack() },
                 onSubmitSuccess = {
                     navController.previousBackStackEntry
@@ -153,12 +156,20 @@ fun AppNavGraph(
             SettingsScreen(
                 onBackClick = { navController.popBackStack() },
                 onSyncClick = { navController.navigate(Screen.Sync.route) },
+                onProfileClick = { navController.navigate(Screen.Profile.route) },
                 onLogout = {
                     loginViewModel.logout()
                     navController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                onBackClick = { navController.popBackStack() },
+                onSettingsClick = { navController.popBackStack() }
             )
         }
 
@@ -170,15 +181,7 @@ fun AppNavGraph(
         }
 
         composable(Screen.Sync.route) {
-            SyncStatusScreen(
-                onBackClick = { navController.popBackStack() }
-            )
-        }
-
-        composable(Screen.Profile.route) {
-            ProfileScreen(
-                onBackClick = { navController.popBackStack() }
-            )
+            SyncStatusScreen(onBackClick = { navController.popBackStack() })
         }
     }
 }

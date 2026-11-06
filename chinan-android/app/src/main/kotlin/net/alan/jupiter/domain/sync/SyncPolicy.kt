@@ -63,7 +63,7 @@ data class PendingSubmission(
  * 规则：
  * - 不传窗口（from/to 都空）→ 全部待提交记录；
  * - 传了窗口 → 只挑 taskDate 落在闭区间内的记录；
- * - 窗口内但 taskDate 为空的记录被跳过（不猜日期，不伪造 taskDate）。
+ * - 窗口内 taskDate 为空的记录仍然保留（无法判断日期，不能静默丢弃）。
  */
 object TaskDateWindow {
 
@@ -83,7 +83,8 @@ object TaskDateWindow {
         if (from.isEmpty() && to.isEmpty()) return true
 
         val date = taskDate?.trim().orEmpty()
-        if (date.isEmpty()) return false
+        // 没有日期的记录无法判断范围，宁可补交也不静默漏掉
+        if (date.isEmpty()) return true
 
         if (from.isNotEmpty() && date < from) return false
         if (to.isNotEmpty() && date > to) return false

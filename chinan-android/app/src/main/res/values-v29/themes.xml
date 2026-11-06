@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+      API 29+：在 v27 的基础上再关掉系统给系统栏加的对比度遮罩，
+      否则透明导航栏下会出现一条灰色「假导航条」。
+    -->
+    <style name="Theme.ChinanKE" parent="Theme.ChinanKE.Base">
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+        <item name="android:windowLightNavigationBar">@bool/app_light_system_bars</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+    </style>
+</resources>
